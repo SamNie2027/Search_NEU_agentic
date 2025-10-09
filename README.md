@@ -53,7 +53,7 @@ Next, we provide resources if students want to build further developments on the
 
 ### Set up a Local Python Environment
 
-We recommend using [Google Colab](https://colab.research.google.com/) (by simply uploading the provided code to Google Drive) to run the example, which provides GPU access and pre-installed packages. If you prefer to use the code on your laptop or workstation, we provide instructions to install a local Python environment using [Anaconda](https://www.anaconda.com/download) in the document.  
+We recommend using [Google Colab](https://colab.research.google.com/) (by simply uploading the provided code to Google Drive) to run the example, which provides GPU access and pre-installed packages. If you prefer to use the code on your laptop or workstation, we provide [instructions](https://github.com/VirtuosoResearch/CS4100_project/blob/main/Set-up-a-Local-Python-Environment.md) to install a local Python environment using [Anaconda](https://www.anaconda.com/download) in the document.  
 
 ### Related Papers 
 
