@@ -1,62 +1,75 @@
 # CS 4100 Course Project: Fall 2025
 
-## Overview
+# **Overview**
 
-In this course project, we will explore the design of AI agent systems capable of retrieving information from databases. These systems will leverage GPT-style language models to understand natural language queries and perform specific actions—such as searching databases—to provide relevant answers. Beyond information retrieval, such agent systems can also be applied to tasks like automated software development through code generation and travel planning by searching across travel websites.
+In this course project, we will design an AI agent system, which uses a language model to understand text queries and perform actions—such as searching databases—to provide answers to queries. We will provide you with an example workflow to build an information retrieval agent, though you are also welcome to explore different topics and build your own agent instead.
 
-### Learning Objectives
+**Learning objectives**
 
-In this document, we will walk through a step-by-step example of implementing an agent system. The example project is organized into the following milestones:
+By the end of this project, you will learn the step-by-step workflow of implementing an agent system, including:
 
-- First, we will first implement a search method that, given an input query, retrieves the most relevant documents from a database.
-- Second, we will learn prompting strategies that guide language models to generate step-by-step actions for solving a task. 
-- Third, we will learn how to load and use GPT-style language models to produce outputs that follow a defined format. 
-- Lastly, we will combine these components to build a complete agent system capable of performing database retrieval.
+- A search method that, given an input query, retrieves the most relevant documents from a database.
+- Prompting an open-source language model to generate step-by-step actions given a query; Load and use a language model to produce outputs that follow a defined format.
+- Build an agent system capable of performing database retrieval.
 
-### Project workflow
+**Milestones** 
 
-We now introduce the workflow for completing the four objectives outlined above. Our goal is to build an agent system that can retrieve information from a database to answer user questions. For instance, consider the question: “Who painted The Starry Night, and where was it created?”
+We will implement the agent system using Python, with a set of starter code provided in a [GitHub repository](https://github.com/VirtuosoResearch/CS4100_project), which includes four milestones:
 
-- We will first create a small collection of Wikipedia-like documents. The search method will be based on [**TF-IDF**](https://en.wikipedia.org/wiki/Tf–idf), a common technique used in search engines to rank documents according to their relevance to a user’s query. This method will identify the most relevant documents by computing similarity scores—for example, retrieving the pages for *The Starry Night* and *Vincent van Gogh* in response to the sample question. 
-- We will design prompting formats that guide the language model to generate thoughts and actions, enabling it to call the search method defined earlier. For instance, the model might generate an action to search for “Vincent van Gogh” in the database.
-- We will then use pretrained GPT-style language models from Hugging Face. By applying the loading and generation functions, the model will process the retrieved documents to reason about the information—for example, determining whether Vincent van Gogh painted The Starry Night.
-- We will implement a workflow that allows the agent to iterate between generating search actions with the language model and retrieving new information from the database. This iterative process may repeat several times until the agent gathers enough evidence to answer the question accurately.
+- Implementing the search method.
+- Implement the prompting methods.
+- Write code to use language models, including loading the model and writing functions to generate results with the models.
+- Writing a class to combine the functions and implement the workflow of the agent.
 
-### Expected workload
+You can test each part using [the provided Jupyter notebook](https://github.com/VirtuosoResearch/CS4100_project/blob/main/Course Project Handout.ipynb).
 
-We will implement the agent system using Python, with a set of starter code provided in [a GitHub repository](https://github.com/VirtuosoResearch/CS4100_project). 
+**Expected workload**
 
-Specifically, we will complete four milestones as follows: 
+- 1st milestone: ~30 lines of code or ~5 hours of work.
+- 2nd milestone: ~20 lines of code or ~4 hours of work.
+- 3rd milestone: ~30 lines of code or ~6 hours of work.
+- 4th milestone: ~30 lines of code or ~5 hours of work. 
 
-- Milestone 1: We implement the search method. We will write the functions to compute tf-idf vectors and cosine similarities between documents. This involves writing around 20 lines of code in the `knowledge_base.py` file. 
-- Milestone 2: We implement the prompting methods. We will write a function to formulate a prompt that makes language generate thoughts and actions, and another function to parse the texts into function calls. This involves writing around 20 lines of code in the `prompting_techniques.py` file. 
-- Milestone 3: We write code to use language models. We will load language models and write functions to generate results with the models. This involves writing around 30 lines of code in the `language_model.py` file. 
-- Milestone 4: We write a class for the agent system. We will combine the functions in the last three milestones and implement the workflow of the agent. This involves writing 20 lines of code in the `agent_system.py`. 
+**Project workflow**
 
-After completing these milestones, you can test each part using the provided Jupyter notebook. The simplest setup is to upload the code to Google Drive and run `Course Project Handout.ipynb` in Google Colab, which provides GPU support for efficient language model execution.
+We now introduce the workflow. For example, suppose we want to develop an agent system capable of retrieving information from a database to answer user questions.
 
-### **Expected tools and platforms**
+- We will first create a small collection of Wikipedia-like documents and then use a search method to find related information to the query. The search method will be based on [**TF-IDF**](https://en.wikipedia.org/wiki/Tf–idf), a technique used in search engines to rank documents according to their relevance to a user’s query. 
+- We will design prompting formats to guide a language model in generating responses and calling the previously defined search method.
+- We will then use a language model from Hugging Face. By applying the loading and generation functions, the model will process the retrieved documents to find answers within the information.
+- We will implement a workflow that enables the agent to iteratively generate search actions using the language model and retrieve new information from the database.
+
+**Expected tools and platforms**
 
 We will use Python as the programming language for this project. For data processing, we will work with NumPy and Pandas. To handle text data, we will apply Python’s built-in string operations to process queries and documents. Additionally, we will utilize pretrained language model implementations from the Hugging Face Transformers library.
 
-## **Resources**
+**Next steps**
 
-Next, we provide resources if students want to build further developments on the project. 
+1. Form a team with two or three classmates.
+2. Make a plan to work on the project, such as setting up a weekly meeting time, a project document / overleaf write-up, etc.
+3. Brainstorm about potential project ideas and make a decision by the end of next Friday, Oct 17.
+4. Make a presentation file to present the overall project idea and share with the rest of the class, and sign up for a presentation slot on Oct 20 or Oct 23!
 
-### Datasets
+## Python Environment
 
-- [**HotpotQA**](https://huggingface.co/datasets/hotpotqa/hotpot_qa): multi-hop QA with sentence-level supporting facts. It can be used for testing the agent workflow 
-- [**FEVER**](https://huggingface.co/datasets/fever/fever): claim verification with evidence and labels. 
-- [**Natural Questions**](https://huggingface.co/datasets/sentence-transformers/natural-questions): real user questions with Wikipedia answers. It can be used for open-domain QA and retrieval.
-- [**TriviaQA**](https://huggingface.co/datasets/mandarjoshi/trivia_qa): This is a large, evidence-backed QA benchmark; good for retrieval + answer grounding. 
-- [**WebQuestions**](https://huggingface.co/datasets/stanfordnlp/web_questions): This is a classic KB-answerable question. It can be used for entity-centric queries 
+- [Google Colab](https://colab.research.google.com/). 
+- Local computing ([instructions](https://github.com/VirtuosoResearch/CS4100_project/blob/main/Resources/Set-up-a-Local-Python-Environment.md)) using [Anaconda](https://www.anaconda.com/download).
+- Discover cluster: Discovery is a high-performance computing (HPC) resource for the Northeastern University research community. If you need computation resources for your course project, you can apply for access to the Discovery cluster. We provide the instructions for accessing a Discover cluster [in the document here](https://github.com/VirtuosoResearch/CS4100_project/blob/main/Resources/Accessing-and-Using-Discovery-Clusters.md).
 
-### Set up a Local Python Environment
+## Examples of AI Agents
 
-We recommend using [Google Colab](https://colab.research.google.com/) (by simply uploading the provided code to Google Drive) to run the example, which provides GPU access and pre-installed packages. If you prefer to use the code on your laptop or workstation, we provide [instructions](https://github.com/VirtuosoResearch/CS4100_project/blob/main/Set-up-a-Local-Python-Environment.md) to install a local Python environment using [Anaconda](https://www.anaconda.com/download) in the document.  
+We describe a few examples of modern AI agents. An AI agent is a software system that utilizes language models to automate tasks.
 
-### Related Papers 
+A travel assistant agent helps plan a trip from start to finish by interpreting a traveler’s request, including dates, budget, and interests. Companies like [Mindtrip AI](https://mindtrip.ai/) and [Booked AI](https://www.booked.ai/) have already built such AI-powered travel planners. These agents search for flights and hotels, check basic rules, and suggest itineraries.
 
+A software engineering agent helps developers build, debug, and maintain software projects more efficiently. Examples include [GitHub Copilot ](https://github.com/features/copilot)and [Tabnine Coding Assistant](https://www.tabnine.com/). Such an agent assists users in understanding codebases, fixing bugs, and managing development workflows. 
+
+A customer service agent assists users by answering questions and resolving issues quickly and accurately. Examples include [Zendesk AI Assist](https://www.zendesk.com/service/ai/) and [Intercom Fin AI Agent](https://fin.ai/drlp/ai-agent), which automatically handle customer inquiries and escalate complex cases to human staff. Such an agent’s role is to interpret customer messages, locate useful information, and send helpful responses.
+
+## Related Papers
+
+- [Toolformer](https://arxiv.org/abs/2302.04761): Language Models Can Teach Themselves to Use Tools
 - [Retrieval-Augmented Generation](https://arxiv.org/abs/2005.11401): Combining generation with non-parametric memory; useful baseline/variant for your tool-use agent.[ ](https://arxiv.org/abs/2005.11401?utm_source=chatgpt.com)
 - [Self-Consistency](https://arxiv.org/abs/2203.11171) Improves Chain of Thought Reasoning in Language Models 
-- [Toolformer](https://arxiv.org/abs/2302.04761): Language Models Can Teach Themselves to Use Tools
+
+- [ReAct](https://arxiv.org/abs/2210.03629?utm_source=chatgpt.com): Synergizing Reasoning and Acting in Language Models.
