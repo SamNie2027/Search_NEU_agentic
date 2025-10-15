@@ -1,7 +1,5 @@
 # CS 4100 Course Project: Fall 2025
 
-# **Overview**
-
 In this course project, we will design an AI agent system, which uses a language model to understand text queries and perform actions—such as searching databases—to provide answers to queries. We will provide you with an example workflow to build an information retrieval agent, though you are also welcome to explore different topics and build your own agent instead.
 
 **Learning objectives**
