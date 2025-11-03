@@ -29,11 +29,6 @@ class Course(Base):
 		Index("ix_courses_subject_number", "subject", "number"),
 	)
 
-	# Note: Some deployments may not have both `id` and `code`. If the concrete
-	# DB schema diverges, prefer using `resolve_course_model(engine)` at runtime.
-	id: Mapped[Optional[int]] = mapped_column(Integer, primary_key=True)
-	code: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
-
     # Course key: e.g. PSYCH or CS
 	subject: Mapped[str] = mapped_column(String(16), nullable=False)
 	
