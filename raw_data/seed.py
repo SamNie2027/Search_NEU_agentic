@@ -54,7 +54,7 @@ for course in data["courses"]:
     cur.execute("""
         INSERT INTO courses (
             subject, number, title, description,
-            min_credits, max_credits, instructor
+            min_credits, max_credits, instructors
         )
         VALUES (%s, %s, %s, %s, %s, %s, %s)
     """, (
