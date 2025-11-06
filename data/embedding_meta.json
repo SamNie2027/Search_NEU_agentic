@@ -1,0 +1,6 @@
+{
+  "model": "sentence-transformers/all-MiniLM-L6-v2",
+  "date": "2025-11-06T22:29:23.650012Z",
+  "dim": 768,
+  "rows": 5492
+}
