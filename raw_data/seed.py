@@ -21,7 +21,7 @@ cur.execute("""
 CREATE TABLE IF NOT EXISTS courses (
     id SERIAL PRIMARY KEY,
     subject TEXT,
-    number TEXT,
+    number INTEGER,
     title TEXT,
     description TEXT,
     min_credits INTEGER,
@@ -58,7 +58,7 @@ for course in data["courses"]:
         )
         VALUES (%s, %s, %s, %s, %s, %s, %s)
     """, (
-        subject, number, title, description,
+        subject, int(number), title, description,
         min_credits, max_credits, list(instructors)
     ))
 

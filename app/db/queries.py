@@ -21,7 +21,7 @@ def _course_model_from_session(session: Session):
 
 def get_course_by_code(session: Session, subject: str, number: int) -> Optional[Course]:
 	"""Return a single course by subject and number, or None if not found."""
-	Model = _course_model_from_session(session) if session else session
+	Model = _course_model_from_session(session)
 	subj = subject.upper().strip()
 	return (
 		session.query(Model) 
