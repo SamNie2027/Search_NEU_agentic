@@ -2,11 +2,12 @@
 # Therefore there is some dependency on issue #13 
 from __future__ import annotations
 
-from typing import Optional, Type
+from typing import Optional, Type, List
 
 from sqlalchemy import Index, Integer, String, Text, inspect
 from sqlalchemy.orm import Mapped, declarative_base, mapped_column
 from sqlalchemy.ext.automap import automap_base
+from sqlalchemy.dialects.postgresql import ARRAY
 
 # Declarative base for ORM models
 # AKA a base for the table
@@ -24,27 +25,24 @@ class Course(Base):
 	__tablename__ = "courses"
 	__table_args__ = (
 		# Composite index to speed up subject/number lookups
-		# accelerates the common lookup pattern “find the course by subject and number,” because the database can satisfy 
-        # WHERE subject = ? AND number = ? with an index-only search
+		# Accelerates the common lookup pattern "find the course by subject and number"
 		Index("ix_courses_subject_number", "subject", "number"),
 	)
 
-    # Course key: e.g. PSYCH or CS
-	subject: Mapped[str] = mapped_column(String(16), nullable=False)
-	
-    # Course number, e.g. the 4100 in CS 4100
-    number: Mapped[int] = mapped_column(Integer, nullable=False)
-
-    # All courses should contain titles
-	title: Mapped[str] = mapped_column(String(512), nullable=True)
-	
-    # Not all courses contain descriptions
-    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-
-	credits: Mapped[int] = mapped_column(Integer, nullable=True)
-
-	# Attributes (e.g., requirement tags). Schemas vary widely; keep as Text here.
-	attributes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+	# Matches raw_data/seed.py (Postgres) shape
+	id: Mapped[Optional[int]] = mapped_column(Integer, primary_key=True)
+	# Department code (TEXT)
+	subject: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+	# Course number as an integer (e.g., 4100). The DB was changed to store numeric course numbers.
+	number: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+	# Title/description stored as TEXT
+	title: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+	description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+	# Credit range (INTEGER)
+	min_credits: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+	max_credits: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+	# Instructors stored as TEXT[] (array of names)
+	instructors: Mapped[Optional[List[str]]] = mapped_column(ARRAY(Text), nullable=True)
 
 	def __repr__(self) -> str:  # pragma: no cover - debug helper
 		return (

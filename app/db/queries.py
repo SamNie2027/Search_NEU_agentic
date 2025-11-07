@@ -7,6 +7,28 @@ from sqlalchemy.orm import Session
 
 from .models import Course, resolve_course_model
 from .engine import get_session
+from types import SimpleNamespace
+
+
+def _detach_row(obj):
+	"""Convert a SQLAlchemy ORM instance to a simple namespace (detached, safe to use after session close).
+
+	Copies all column values found on the mapped table to attributes on a SimpleNamespace.
+	"""
+	if obj is None:
+		return None
+	# If obj is already a mapping/namespace, return as-is
+	# (helps if callers pass through simple dicts)
+	try:
+		table = obj.__table__
+		values = {c.name: getattr(obj, c.name) for c in table.columns}
+		return SimpleNamespace(**values)
+	except Exception:
+		# Fallback: try vars()
+		try:
+			return SimpleNamespace(**vars(obj))
+		except Exception:
+			return obj
 
 
 def _course_model_from_session(session: Session):
@@ -21,7 +43,7 @@ def _course_model_from_session(session: Session):
 
 def get_course_by_code(session: Session, subject: str, number: int) -> Optional[Course]:
 	"""Return a single course by subject and number, or None if not found."""
-	Model = _course_model_from_session(session) if session else session
+	Model = _course_model_from_session(session)
 	subj = subject.upper().strip()
 	return (
 		session.query(Model) 
@@ -70,7 +92,8 @@ def get_course_by_code_safe(subject: str, number: int):
 		course = get_course_by_code_safe("CS", 2500)
 	"""
 	with get_session() as session:
-		return get_course_by_code(session, subject, number)
+		row = get_course_by_code(session, subject, number)
+		return _detach_row(row)
 
 
 def search_courses_by_title_safe(term: str, limit: int = 10):
@@ -78,7 +101,8 @@ def search_courses_by_title_safe(term: str, limit: int = 10):
 	Wrapper around search_courses_by_title using get_session() for session management.
 	"""
 	with get_session() as session:
-		return search_courses_by_title(session, term, limit)
+		rows = search_courses_by_title(session, term, limit)
+		return [(_detach_row(r) if r is not None else None) for r in rows]
 
 
 def random_courses_safe(n: int = 3):
@@ -86,7 +110,8 @@ def random_courses_safe(n: int = 3):
 	Wrapper around random_courses using get_session() for session management.
 	"""
 	with get_session() as session:
-		return random_courses(session, n)
+		rows = random_courses(session, n)
+		return [(_detach_row(r) if r is not None else None) for r in rows]
 
 # all declares the module’s public API for star-imports.
 __all__ += [

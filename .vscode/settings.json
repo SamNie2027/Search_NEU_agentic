@@ -1,0 +1,4 @@
+{
+    // Ensure terminals launched from VS Code load variables from .env
+    "python.terminal.useEnvFile": true
+}
