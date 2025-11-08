@@ -6,57 +6,27 @@
 # First, let's import necessary packages
 from __future__ import annotations
 from dataclasses import dataclass, field, asdict
+import string
 from typing import Callable, Dict, List, Tuple, Optional, Any
 import json, math, re, textwrap, random, os, sys
 import math
 from collections import Counter, defaultdict
+from app.db.engine import get_session
+from app.db.queries import return_text_stream
+import numpy as np
 
-# A toy corpus mimicing the documents of Wikipedia
-CORPUS = [
-    {
-        "id": "doc1",
-        "title": "Vincent van Gogh",
-        "text": (
-            "Vincent van Gogh was a Dutch post-impressionist painter who is among the most famous and influential figures "
-            "in the history of Western art. He created about 2,100 artworks, including The Starry Night, while staying at "
-            "the Saint-Paul-de-Mausole asylum in Saint-Rémy-de-Provence in 1889."
-        ),
-    },
-    {
-        "id": "doc2",
-        "title": "The Starry Night",
-        "text": (
-            "The Starry Night is an oil-on-canvas painting by Dutch Post-Impressionist painter Vincent van Gogh. "
-            "Painted in June 1889, it depicts the view from the east-facing window of his asylum room at Saint-Rémy-de-Provence, "
-            "just before sunrise, with the addition of an ideal village."
-        ),
-    },
-    {
-        "id": "doc3",
-        "title": "Saint-Rémy-de-Provence",
-        "text": (
-            "Saint-Rémy-de-Provence is a commune in the Bouches-du-Rhône department in Southern France. The Saint-Paul-de-Mausole "
-            "asylum is located here, where Vincent van Gogh stayed and painted several works including The Starry Night."
-        ),
-    },
-    {
-        "id": "doc4",
-        "title": "Pythagorean theorem",
-        "text": (
-            "In mathematics, the Pythagorean theorem is a fundamental relation in Euclidean geometry among the three sides of a "
-            "right-angled triangle: the square of the hypotenuse equals the sum of the squares of the other two sides."
-        ),
-    },
-    {
-        "id": "doc5",
-        "title": "Claude Monet",
-        "text": (
-            "Claude Monet was a French painter, a founder of Impressionist painting. His works include the Water Lilies series, "
-            "Haystacks, and Impression, Sunrise."
-        ),
-    },
-    # A quick play around: Add some extra documents and watch how the GPT model explores, searches, and reasons through more scenarios in the final step.
-]
+# Get initial data
+with get_session() as session:
+    # Collect recipe strings in chunks. `return_text_stream` yields strings;
+    # convert each chunk to a list and extend the master list so `sentences`
+    # is a flat list of strings (SentenceTransformer expects an indexable list).
+    CORPUS = []
+    for x in range(0, 6001, 1000):
+        chunk = list(return_text_stream(session, offset=x, n=1000))
+        # filter out any empty strings
+        chunk = [s for s in chunk if s]
+        CORPUS.extend(chunk)
+
 
 # Then, we design a simple search method based on TF-IDF to retrieve information from the corpus.
 
@@ -72,13 +42,24 @@ CORPUS = [
 
 # As an extension of the project, you can redefine the search method in this code snippet to incorporate a more powerful search method.
 
+# irrelevent words to remove
+STOPWORDS = {
+    "a", "an", "the",
+    "is", "are", "am", "was", "were", "be", "been", "being",
+    "i", "me", "my", "you", "your", "u",
+    "and", "or", "but", "so",
+    "to", "of", "in", "on", "for", "at", "with",
+    "this", "that", "it", "its",
+    "because", "not",
+    "rt"
+}
 
 # 1.  Tokenize the document into words
 def tokenize(text: str) -> List[str]:
     return re.findall(r"[a-zA-Z0-9']+", text.lower())
 
 #     Get all the words of each document in the corpus
-DOC_TOKENS = [tokenize(d["title"] + " " + d["text"]) for d in CORPUS]
+DOC_TOKENS = filter(lambda x: x not in STOPWORDS, [tokenize(d["title"] + " " + d["text"]) for d in CORPUS])
 
 #     Get all the words from the corpus
 VOCAB = sorted(set(t for doc in DOC_TOKENS for t in doc))
@@ -88,14 +69,10 @@ VOCAB = sorted(set(t for doc in DOC_TOKENS for t in doc))
 def compute_tf(tokens: List[str]) -> Dict[str, float]:
     # Input: A list of all the words in a document
     # Output: A dictionary of the frequency of each word
-
-    # ===== TODO =====
-    # implement the function to compute normalized term frequency: count of word / doc length
-    
-    return {}
-    # ===== TODO =====
-
-
+    result = {}
+    for x in tokens:
+        result[x] = result.get(x, 0) + 1
+    return result
 
 # 3.   Compute the document frequency across corpus: how many docs does a word appear?
 def compute_df(doc_tokens: List[List[str]]) -> Dict[str, float]:
@@ -112,8 +89,6 @@ def compute_df(doc_tokens: List[List[str]]) -> Dict[str, float]:
 DF = compute_df(DOC_TOKENS) # Get the DF
 N_DOC = len(DOC_TOKENS) # number of docs
 IDF = {t: math.log((N_DOC + 1) / (DF[t] + 0.5)) + 1 for t in VOCAB} # Inverse document frequency
-
-
 
 # 4.   We compute TF-IDF vectors for each document, which is the product between
 def tfidf_vector(tokens: List[str]) -> Dict[str, float]:
@@ -137,7 +112,7 @@ def cosine(a: Dict[str, float], b: Dict[str, float]) -> float:
     # ===== TODO =====
     # Compute the cosine similarity between two tf-idf vectors
     # Notice that they are two dictionaries and could have missing keys
-    
+    common_words = filter(lambda x: x in b, a.keys())
     # compute dot product
     
     # compute norms
