@@ -74,11 +74,18 @@ def random_courses(session: Session, n: int = 3) -> List[Course]:
 	q = session.query(Model).order_by(func.random()).limit(int(n))  # type: ignore[arg-type]
 	return list(q)
 
+def return_text_stream(session: Session, n: int = 1000, offset: int = 0):
+    Model = _course_model_from_session(session)
+    q = session.query(Model).offset(int(offset)).limit(int(n)).yield_per(100)
+    for row in q:
+        yield format_course_recipe(row)
+
 
 __all__ = [
 	"get_course_by_code",
 	"search_courses_by_title",
 	"random_courses",
+	"return_text_stream"
 ]
 
 
@@ -118,4 +125,48 @@ __all__ += [
 	"get_course_by_code_safe",
 	"search_courses_by_title_safe",
 	"random_courses_safe",
+]
+
+
+def format_course_recipe(course) -> str:
+	"""Return a normalized text recipe for a course.
+
+	Format: "{subject} {number}: {title}. {description}". Missing parts are skipped cleanly.
+	Accepts either a SimpleNamespace returned by the safe wrappers or an ORM instance.
+	"""
+	if course is None:
+		return ""
+	# Try attribute access safely
+	subj = getattr(course, "subject", None)
+	num = getattr(course, "number", None)
+	title = getattr(course, "title", None)
+	desc = getattr(course, "description", None)
+
+	parts = []
+	if subj:
+		parts.append(str(subj).strip())
+	if num is not None:
+		parts.append(str(num).strip())
+
+	head = " ".join(parts)
+	if head:
+		head = head + ":"
+
+	body = ""
+	if title:
+		body += str(title).strip()
+	if desc:
+		if body:
+			body += ". " + str(desc).strip()
+		else:
+			body = str(desc).strip()
+
+	# Compose final recipe and normalize whitespace
+	recipe = f"{head} {body}".strip()
+	# Collapse multiple spaces
+	return " ".join(recipe.split())
+
+
+__all__ += [
+	"format_course_recipe",
 ]
