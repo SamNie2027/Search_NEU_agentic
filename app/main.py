@@ -1,6 +1,10 @@
 from typing import Union
 
 from fastapi import FastAPI
+from db import queries as queries
+
+import json
+from types import SimpleNamespace
 
 app = FastAPI()
 
@@ -10,17 +14,25 @@ def read_root():
     return {"Hello": "World"}
 
 
-#modify when we have db access to query connection
 @app.get("/healthz")
 def read_root():
-    return {"status:ok", "db:"+str(True)}
+    return {"status:ok", "db:"+str(len(queries.random_courses_safe())!=0)}
 
-#modify when we can call db
 @app.get("/courses/sample")
 def read_root():
-    return {"result of random_courses"}
+    result=queries.random_courses_safe()
+    return {json.dumps(result, default=my_object_encoder)}
 
-#modify when we can call db
 @app.get("/courses/search/{name}")
 def read_item(name: str, q: int= 10):
-    return {"name": name, "limit": q}
+    result=queries.search_courses_by_title_safe(name, q)
+    return {json.dumps(result, default=my_object_encoder)}
+
+@app.get("/courses/search/{subject}/{id}")
+def read_item(subject: str,id: int):
+    result=queries.get_course_by_code_safe(subject,id)
+    return {json.dumps(result, default=my_object_encoder)}
+
+
+def my_object_encoder(obj):
+    return {"subject": obj.subject, "number": obj.number, "title":obj.title, "description":obj.description}
