@@ -59,11 +59,10 @@ def tokenize(text: str) -> List[str]:
     return re.findall(r"[a-zA-Z0-9']+", text.lower())
 
 #     Get all the words of each document in the corpus
-DOC_TOKENS = filter(lambda x: x not in STOPWORDS, [tokenize(d["title"] + " " + d["text"]) for d in CORPUS])
+DOC_TOKENS = [[t for t in tokenize(doc) if t not in STOPWORDS] for doc in CORPUS]
 
 #     Get all the words from the corpus
 VOCAB = sorted(set(t for doc in DOC_TOKENS for t in doc))
-
 
 # 2.  Compute term frequency (TF) for each doc
 def compute_tf(tokens: List[str]) -> Dict[str, float]:
@@ -78,12 +77,11 @@ def compute_tf(tokens: List[str]) -> Dict[str, float]:
 def compute_df(doc_tokens: List[List[str]]) -> Dict[str, float]:
     # Input: A list of lists of tokens in each document
     # Output: A dictionary of the counts of each word appearing across the documents
-
-    # ===== TODO =====
-    # implement the function to compute document frequency: count of the word appearing in the documents
-    
-    # ===== TODO =====
-    return {}
+    df = defaultdict(int)
+    for tokens in doc_tokens:
+        for token in set(tokens):
+            df[token] += 1
+    return df
 
 #     Compute the inverse document frequency (higher for rarer terms), in which we use a smoothed variant
 DF = compute_df(DOC_TOKENS) # Get the DF
@@ -114,12 +112,17 @@ def cosine(a: Dict[str, float], b: Dict[str, float]) -> float:
     # Notice that they are two dictionaries and could have missing keys
     common_words = filter(lambda x: x in b, a.keys())
     # compute dot product
+    dot_prod = sum(a[word] * b[word] for word in common_words)
+
     
     # compute norms
-    similarity = None
+    a_norm = np.linalg.norm(np.array(list(a.values())), ord=2)
+    b_norm = np.linalg.norm(np.array(list(b.values())), ord=2)
+    if a_norm == 0.0 or b_norm == 0.0:
+        return 0.0
+    similarity = dot_prod/(a_norm * b_norm)
     # ===== TODO =====
     return similarity
-
 
 # 6.   We implement a search method based on the cosine similarity, which finds the documents with the highest similarity scores as the top-k search results.
 def search_corpus(query: str, k: int = 3) -> List[Dict[str, Any]]:
