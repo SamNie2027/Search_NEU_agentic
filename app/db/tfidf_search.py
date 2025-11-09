@@ -4,15 +4,23 @@
 
 
 # First, let's import necessary packages
+
 from __future__ import annotations
+import sys
+from pathlib import Path
+# When running this module directly (python app/db/tfidf_search.py) ensure the
+# repository root is on sys.path so absolute imports like `app.db.queries` work.
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 from dataclasses import dataclass, field, asdict
 import string
 from typing import Callable, Dict, List, Tuple, Optional, Any
 import json, math, re, textwrap, random, os, sys
 import math
 from collections import Counter, defaultdict
-from app.db.engine import get_session
-from app.db.queries import return_text_stream
+from .engine import get_session
+from .queries import return_text_stream
 import numpy as np
 
 # Get initial data
@@ -131,8 +139,8 @@ def search_corpus(query: str, k: int = 3) -> List[Dict[str, Any]]:
     scored.sort(reverse=True)
     results = []
     for score, idx in scored[:k]:
-        d = CORPUS[idx].copy()
-        d["score"] = float(score)
+        d = {CORPUS[idx]: float(score)}
+        # d["score"] = float(score)
         results.append(d)
     return results
 
@@ -159,3 +167,5 @@ TOOLS = {
         "fn": lambda answer: {"tool": "finish", "answer": answer}
     }
 }
+
+print(search_corpus("CS 4100 Artificial-Intelligence"))
