@@ -139,8 +139,20 @@ def search_corpus(query: str, k: int = 3) -> List[Dict[str, Any]]:
     scored.sort(reverse=True)
     results = []
     for score, idx in scored[:k]:
-        d = {CORPUS[idx]: float(score)}
-        # d["score"] = float(score)
+        text = CORPUS[idx]
+        title = None
+        try:
+            after_colon = text.split(":", 1)[1].strip()
+            title = after_colon.split(".", 1)[0].strip()
+        except Exception:
+            title = text[:80]
+
+        d = {
+            "id": int(idx),
+            "title": title,
+            "text": text,
+            "score": float(score),
+        }
         results.append(d)
     return results
 
@@ -152,7 +164,7 @@ def tool_search(query: str, k: int = 3) -> Dict[str, Any]:
         "tool": "search",
         "query": query,
         "results": [
-            {"id": h["id"], "title": h["title"], "snippet": h["text"][:240] + ("..." if len(h["text"]) > 240 else "")}
+            {"id": h["id"], "title": h["title"], "snippet": h["text"]}
             for h in hits
         ],
     }
@@ -168,4 +180,4 @@ TOOLS = {
     }
 }
 
-print(search_corpus("CS 4100 Artificial-Intelligence"))
+print(tool_search("CS 4100 Artificial-Intelligence"))
