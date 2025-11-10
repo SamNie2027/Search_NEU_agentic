@@ -156,3 +156,5 @@ TOOLS = {
         "fn": lambda answer: {"tool": "finish", "answer": answer}
     }
 }
+
+print(tool_search("Algorithms"))
