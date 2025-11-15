@@ -72,6 +72,7 @@ CORPUS = [
 
 # As an extension of the project, you can redefine the search method in this code snippet to incorporate a more powerful search method.
 
+
 # 1.  Tokenize the document into words
 def tokenize(text: str) -> List[str]:
     return re.findall(r"[a-zA-Z0-9']+", text.lower())

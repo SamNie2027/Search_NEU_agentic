@@ -1,3 +1,4 @@
+.env
 app/db/__pycache__
 tests/__pycache__
 /.vs/Search_NEU_agentic/FileContentIndex/44489990-c9f3-4e7a-a03d-8ba72714f1b5.vsidx
