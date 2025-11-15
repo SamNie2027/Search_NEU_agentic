@@ -1,0 +1,10 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\app",
+    "\\app\\db",
+    "\\data"
+  ],
+  "SelectedNode": "\\app\\db\\tfidf_search.py",
+  "PreviewInSolutionExplorer": false
+}
