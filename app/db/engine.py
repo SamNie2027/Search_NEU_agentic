@@ -7,13 +7,24 @@ from sqlalchemy.orm import sessionmaker
 # Load environment variables
 load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
+# Fail early if DATABASE_URL is missing
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL environment variable is not set. Did you load .env from the project root?")
+
+# When using sqlite we need special connect args; keep connect_args as a dict
+# so we don't accidentally pass `None` into SQLAlchemy which can cause
+# a TypeError ('NoneType' object is not iterable') in some versions.
+connect_args = {}
+if DATABASE_URL.startswith("sqlite"):
+    connect_args = {"check_same_thread": False}
 
 # Creating database engine
-# Note that SQLAlchemy uses lazy connection so we only know if it's successfull
-# if we actually try doing something with the connection created by the engine
+# Note: SQLAlchemy uses lazy connection; errors can show up when the engine
+# establishes a connection later on.
 engine = create_engine(
     DATABASE_URL,
-    pool_pre_ping=True  # checks connection health automatically
+    connect_args=connect_args,
+    pool_pre_ping=True,  # checks connection health automatically
 )
 
 # Create a session
