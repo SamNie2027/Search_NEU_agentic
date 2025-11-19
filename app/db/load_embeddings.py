@@ -1,6 +1,7 @@
 import pandas as pd
 
 from pathlib import Path
+import numpy as np
 
 def load_embeddings():
     """Load embeddings parquet file from a sensible location.
@@ -21,7 +22,6 @@ def load_embeddings():
         meta_path = parquet_path.with_name("embedding_meta.json")
         meta = None
         if meta_path.exists():
-            print("a")
             import json
             with open(meta_path, "r", encoding="utf-8") as fh:
                 meta = json.load(fh)
@@ -39,5 +39,3 @@ def load_embeddings():
                 )
 
         return courses, embeddings
-    
-load_embeddings()
