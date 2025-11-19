@@ -3,11 +3,14 @@ from typing import Union
 from fastapi import FastAPI
 from db import queries as queries
 
+from scripts.load_embeddings import load_embeddings
+
 import json
 from types import SimpleNamespace
 
 app = FastAPI()
 
+embeddings = load_embeddings()
 
 @app.get("/")
 def read_root():
