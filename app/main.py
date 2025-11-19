@@ -22,8 +22,8 @@ from types import SimpleNamespace
 
 app = FastAPI()
 
-embeddings = load_embeddings()
-print(embeddings)
+# Loads once here 
+courses, embeddings = load_embeddings()
 
 @app.get("/")
 def read_root():
