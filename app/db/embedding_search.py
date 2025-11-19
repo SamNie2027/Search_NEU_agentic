@@ -12,8 +12,6 @@ from app.db.load_embeddings import load_embeddings
 import pandas as pd
 import numpy as np
 
-courses, embeddings = load_embeddings()
-
 model = SentenceTransformer('sentence-transformers/all-mpnet-base-v2')
 
 
@@ -70,4 +68,3 @@ def embedding_search(query: str, courses: list, embeddings: list, k: int = 3):
 
     return results
 
-print(embedding_search("Artificial Intelligence", courses, embeddings))
