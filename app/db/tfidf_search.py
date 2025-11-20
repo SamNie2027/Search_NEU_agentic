@@ -24,7 +24,7 @@ from .queries import return_text_stream
 import numpy as np
 
 # Get initial data
-def get_corpus(bucketLevel: int = None):
+def get_corpus(bucketLevel: int = None, subject: str = None, credits: int = None):
     with get_session() as session:
         # Collect recipe strings in chunks. `return_text_stream` yields strings;
         # convert each chunk to a list and extend the master list so `sentences`
@@ -32,10 +32,8 @@ def get_corpus(bucketLevel: int = None):
         CORPUS = []
 
         for x in range(0, 6001, 1000):
-            if bucketLevel is not None:
-                chunk = list(return_text_stream(session=session, bucketLevel=bucketLevel, offset=x, n=1000))
-            else:
-                chunk = list(return_text_stream(session=session, offset=x, n=1000))
+            chunk = list(return_text_stream(session=session, bucketLevel=bucketLevel, credits=credits, subject=subject, offset=x, n=1000))
+
             # filter out any empty strings
             chunk = [s for s in chunk if s]
             CORPUS.extend(chunk)
@@ -154,11 +152,9 @@ def search_corpus(query: str, DOC_VECS, CORPUS, IDF, k: int = 3) -> List[Dict[st
     return results
 
 #       Integrate the search method as a tool
-def tool_search(query: str, bucketLevel: int = None, k: int = 3) -> Dict[str, Any]:
-    if bucketLevel is not None:
-        CORPUS = get_corpus(bucketLevel)
-    else:
-        CORPUS = get_corpus()
+def tool_search(query: str, bucketLevel: int = None, subject: str = None, credits: int = None, k: int = 3) -> Dict[str, Any]:
+    CORPUS = get_corpus(bucketLevel, subject, credits)
+
     DOC_TOKENS, VOCAB = doc_tokens_vocab(CORPUS)
     IDF = compute_idf(DOC_TOKENS, VOCAB)
     DOC_VECS = doc_vecs(DOC_TOKENS, IDF)
@@ -186,4 +182,4 @@ TOOLS = {
     }
 }
 
-print(tool_search("artificial intelligence", 3000))
+print(tool_search(query="psychology", credits=5))

@@ -74,24 +74,26 @@ def random_courses(session: Session, n: int = 3) -> List[Course]:
 	q = session.query(Model).order_by(func.random()).limit(int(n))  # type: ignore[arg-type]
 	return list(q)
 
-def return_text_stream(session: Session, bucketLevel: int = None, n: int = 1000, offset: int = 0):
+def return_text_stream(session: Session, bucketLevel: int = None, subject: str = None, credits: int = None, n: int = 1000, offset: int = 0):
 	Model = _course_model_from_session(session)
-	if bucketLevel is None:
-		q = session.query(Model).offset(int(offset)).limit(int(n)).yield_per(100)
-	else:
-		# Filter using SQLAlchemy boolean operators (avoid Python `and` on ClauseElements)
-		# Keep the query iterable and stream rows with `yield_per`.
+	# Start a base query and apply filters incrementally so we don't need
+	# separate branches for every combination of filters.
+	q = session.query(Model)
+
+	if bucketLevel is not None:
 		start = int(bucketLevel)
 		end = start + 1000
-		# Apply offset/limit so repeated chunked calls (different offsets) return
-		# distinct slices of the same bucket instead of yielding the same rows
-		# on every call.
-		q = (
-			session.query(Model)
-			.filter((Model.number >= start) & (Model.number < end))
-			.order_by(Model.subject.asc(), Model.number.asc())
-			.offset(int(offset)).limit(int(n)).yield_per(100)
-		)
+		q = q.filter((Model.number >= start) & (Model.number < end))
+
+	if subject is not None:
+		q = q.filter(Model.subject == subject.upper())
+
+	if credits is not None:
+		# Assume `credits` is a numeric column on the model
+		q = q.filter(Model.min_credits >= int(credits))
+
+	# Apply a stable ordering and pagination for chunked reads
+	q = q.order_by(Model.subject.asc(), Model.number.asc()).offset(int(offset)).limit(int(n)).yield_per(100)
 
 	for row in q:
 		yield format_course_recipe(row)
