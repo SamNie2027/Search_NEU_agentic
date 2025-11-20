@@ -74,11 +74,27 @@ def random_courses(session: Session, n: int = 3) -> List[Course]:
 	q = session.query(Model).order_by(func.random()).limit(int(n))  # type: ignore[arg-type]
 	return list(q)
 
-def return_text_stream(session: Session, n: int = 1000, offset: int = 0):
-    Model = _course_model_from_session(session)
-    q = session.query(Model).offset(int(offset)).limit(int(n)).yield_per(100)
-    for row in q:
-        yield format_course_recipe(row)
+def return_text_stream(session: Session, bucketLevel: int = None, n: int = 1000, offset: int = 0):
+	Model = _course_model_from_session(session)
+	if bucketLevel is None:
+		q = session.query(Model).offset(int(offset)).limit(int(n)).yield_per(100)
+	else:
+		# Filter using SQLAlchemy boolean operators (avoid Python `and` on ClauseElements)
+		# Keep the query iterable and stream rows with `yield_per`.
+		start = int(bucketLevel)
+		end = start + 1000
+		# Apply offset/limit so repeated chunked calls (different offsets) return
+		# distinct slices of the same bucket instead of yielding the same rows
+		# on every call.
+		q = (
+			session.query(Model)
+			.filter((Model.number >= start) & (Model.number < end))
+			.order_by(Model.subject.asc(), Model.number.asc())
+			.offset(int(offset)).limit(int(n)).yield_per(100)
+		)
+
+	for row in q:
+		yield format_course_recipe(row)
 
 
 __all__ = [
