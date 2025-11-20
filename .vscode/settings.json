@@ -1,4 +1,7 @@
 {
     // Ensure terminals launched from VS Code load variables from .env
-    "python.terminal.useEnvFile": true
+    "python.terminal.useEnvFile": true,
+    "python-envs.defaultEnvManager": "ms-python.python:system",
+    "python-envs.pythonProjects": [],
+    "git.ignoreLimitWarning": true
 }

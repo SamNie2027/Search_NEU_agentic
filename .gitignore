@@ -1,4 +1,6 @@
 .env
+.venv
+.venv2
 app/db/__pycache__
 tests/__pycache__
 app/__pycache
