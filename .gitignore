@@ -3,5 +3,7 @@
 .venv2
 app/db/__pycache__
 tests/__pycache__
-app/__pycache__
-.vs/
+app/__pycache
+.vs
+.venv
+.venv2
