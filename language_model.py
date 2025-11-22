@@ -10,10 +10,20 @@ tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, trust_remote_code=True)
 
 # ====== TODO ======
 # Load model with AutoModelForCausalLM.from_pretrained() from huggingface with the above MODEL_NAME, LOAD_8BIT, DTYPE
-model = None
+model = AutoModelForCausalLM.from_pretrained(
+    MODEL_NAME,
+    load_in_8bit=LOAD_8BIT,
+    torch_dtype=DTYPE,
+    trust_remote_code=True
+)
 
 # Generation configuration: use GenerationConfig to define the generation parameters
-gen_cfg = None
+gen_cfg = GenerationConfig(
+    max_new_tokens=200,
+    do_sample=False,
+    temperature=0.0,
+    top_p=1.0
+)
 # ====== TODO ======
 
 # ====== Helper function: Enforce two-line schema in the decoding ======
@@ -76,8 +86,8 @@ def hf_llm(prompt: str) -> str:
     #     Here, let's write the code to use language model to generate the response given the full_prompt
     #     First, we need to use the tokenizer to tokenize the prompt into pytorch tensors
     #     Second, we need to use model.generate() to generate the model response (which includes the Thought and Action)
-    inputs = None
-    output_ids = None
+    inputs = tokenizer(full_prompt, return_tensors="pt")
+    output_ids = model.generate(**inputs, generation_config=gen_cfg)
     # ====== TODO ======
 
 
