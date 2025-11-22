@@ -348,7 +348,7 @@ SYSTEM_PREAMBLE = f"""
     If uncertain, choose the subject whose full name best matches the user’s query.
 
     Available tools:
-    - keyword_search[query="<text>", bucketLevel?=<bucketLevel>, subject?=<subject code>]
+    - keyword_search[query="<text>", bucketLevel?=<int>, subject?=<string>]
     - semantic_search[query="<text>"]
 
     To finish, use: finish[answer="<final answer>"]
