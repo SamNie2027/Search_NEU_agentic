@@ -8,6 +8,7 @@
 #   1) A method for parsing Action lines
 #   2) A small argument parser for the tools defined in the last step, such as parsing key="value", key=123, key=4.5, key=true/false
 #   3) Helpers to format the agent’s history and build the next prompt
+import json
 from typing import Any, Dict, List, Optional, Tuple
 import ast
 import re
@@ -82,21 +83,38 @@ def parse_action(line: str) -> Optional[Tuple[str, Dict[str, Any]]]:
       Action: finish[answer="Vincent van Gogh."]
     Returns (action_name, args_dict) or None on invalid input.
     """
-    # ====== TODO ======
-    #     Use the parse_args function above to write a function that converts an action string to a function call
-    #     Return the name of the function and the args
-    name = None; args = None
+    # Use the `split_args` helper to convert the bracket contents into args.
+    # Expected format after trimming:
+    #   Action: name[key="value", k=3]
+    line = line.strip()
+    if not line.startswith("Action:"):
+        return None
 
-    # 1) Must start with 'Action:'
-    
-    # 2) Extract action name up to the first '['
-    #    name must be non-empty and composed of letters/underscores (basic check)
-    
-    # 3) Inside brackets: key=value pairs separated by commas (quotes allowed)
-    
-    # 4) Allow trailing whitespace after closing bracket only
-    
-    # ====== TODO ======
+    rest = line[len("Action:"):].strip()
+
+    # Regex to capture: name[...]
+    # Require only lowercase letters and underscores for the name, no spaces.
+    m = re.match(r"^([a-z_]+)\[(.*)\]$", rest)
+    if not m:
+        # invalid format (missing brackets or invalid name)
+        return None
+
+    name = m.group(1)
+    args_str = m.group(2).strip()
+
+    # Basic name sanity-check: only lowercase letters and underscores
+    if not re.fullmatch(r"[a-z_]+", name):
+        return None
+
+    # Parse args (may be empty)
+    if not args_str:
+        args = {}
+    else:
+        try:
+            args = split_args(args_str)
+        except Exception:
+            return None
+
     return name, args
 
 
@@ -114,19 +132,231 @@ def format_history(trajectory: List[Dict[str, str]]) -> str:
         lines.append(f"Observation: {step['observation']}")
     return "\n".join(lines)
 
+subject_codes = {
+    "MGT": "Management - CPS",
+    "EDUT": "Education - California Prepared",
+    "ENVR": "Earth and Environmental Sciences",
+    "PST": "Professional Studies - CPS",
+    "AMSL": "American Sign Language",
+    "ANTH": "Anthropology",
+    "CSYE": "Computer Systems Engineering",
+    "DA": "Data Analytics",
+    "SBSY": "Sustainable Building Systems",
+    "LING": "Linguistics",
+    "GE": "General Engineering",
+    "PHMD": "Pharmacy Practice",
+    "HONR": "Honors Program",
+    "PJM": "Project Management - CPS",
+    "DS": "Data Science",
+    "INSC": "Interdisciplinary Studies in Science",
+    "HRM": "Human Resources Management - CPS",
+    "FRNH": "French",
+    "EMGT": "Engineering Management",
+    "DEAF": "Deaf Studies",
+    "STRT": "Strategy",
+    "NNMD": "Nanomedicine",
+    "ECN": "Economics - CPS",
+    "PHL": "Philosophy - PHL",
+    "PHLS": "Philosophy - CPS Specialty",
+    "BNSC": "Behavioral Neuroscience",
+    "SPNS": "Spanish",
+    "SLPA": "Speech-Language Pathology and Audiology",
+    "ENGW": "English Writing",
+    "BUSN": "Business Administration",
+    "JRNL": "Journalism",
+    "ENLR": "Engineering Leadership",
+    "EEAM": "Co-op/Experiential Education in Arts, Media, and Design",
+    "MISM": "Management Information Systems",
+    "HINF": "Health Informatics",
+    "BIOE": "Bioengineering",
+    "HSCI": "Health Science",
+    "EESH": "Co-op/Experiential Education in Social Sciences and Humanities",
+    "OR": "Operations Research",
+    "GAME": "Game Design",
+    "LW": "Law (for Non-Law School Students)",
+    "CY": "Cybersecurity",
+    "EDUC": "Education",
+    "PMST": "Pharmaceutics",
+    "AAI": "Applied Artificial Intelligence - CPS",
+    "ACCT": "Accounting",
+    "THTR": "Theatre",
+    "NRSG": "Nursing",
+    "EXRE": "Extended Realities",
+    "ACC": "Accounting - CPS",
+    "WMNS": "Women’s, Gender, and Sexuality Studies",
+    "PHY": "Physics - CPS",
+    "CHM": "Chemistry - CPS",
+    "MKT": "Marketing - CPS",
+    "MUST": "Music Technology",
+    "IE": "Industrial Engineering",
+    "ARTF": "Art - Fundamentals",
+    "PSY": "Psychology - CPS",
+    "ENGL": "English",
+    "DADS": "Data Analytics and Decision Support",
+    "INSH": "Interdisciplinary Studies in Social Sciences and Humanities",
+    "EEBA": "Co-op/Experiential Education in Business",
+    "EEMB": "Ecology, Evolution, and Marine Biology",
+    "MGSC": "Management Science",
+    "INNO": "Corporate Innovation",
+    "CHNS": "Chinese",
+    "ARTD": "Art - Media Arts",
+    "MSCI": "Medical Sciences",
+    "AACE": "Arts Administration and Cultural Entrepreneurship",
+    "TELR": "Technology Leadership",
+    "ABRS": "Study Abroad - Science",
+    "KORE": "Korean",
+    "ARTG": "Art - Design",
+    "AVM": "Advanced Manufacturing Systems - CPS",
+    "LACS": "Latin American and Caribbean Studies",
+    "MTH": "Mathematics - CPS",
+    "NETS": "Network Science",
+    "MUSC": "Music",
+    "CRIM": "Criminal Justice",
+    "ARCH": "Architecture",
+    "INT": "Interdisciplinary Studies - CPS",
+    "HSV": "Human Services - CPS",
+    "GBST": "Global Studies",
+    "CIVE": "Civil and Environmental Engineering",
+    "SOCL": "Sociology",
+    "BTC": "Biotechnology - CPS",
+    "SMFA": "School of the Museum of Fine Arts",
+    "EESC": "Co-op/Experiential Education in Science",
+    "ENCP": "Engineering Co-Op Education",
+    "HMG": "Health Management - CPS",
+    "GSND": "Game Science and Design",
+    "ME": "Mechanical Engineering",
+    "LST": "Liberal Studies - CPS",
+    "TELE": "Telecommunication Systems",
+    "LS": "Legal Studies",
+    "FIN": "Finance - CPS",
+    "ENVS": "Environmental Studies",
+    "PHYS": "Physics",
+    "ALY": "Analytics - CPS",
+    "GRMN": "German",
+    "COMM": "Communication Studies",
+    "EXED": "Cooperative/Experiential Education",
+    "LPSC": "Law and Public Policy",
+    "INAM": "Interdisciplinary Studies in Arts, Media, and Design",
+    "BINF": "Bioinformatics",
+    "BIOT": "Biotechnology",
+    "LDR": "Leadership Studies - CPS",
+    "ESLG": "English as a Second Language - CPS Specialty",
+    "TCC": "Technical Communications - CPS",
+    "ARTS": "Art - Studio",
+    "ARTH": "Art - History",
+    "SCHM": "Supply Chain Management",
+    "PHIL": "Philosophy",
+    "RSSN": "Russian",
+    "JPNS": "Japanese",
+    "SUEN": "Sustainable Urban Environments",
+    "GET": "General Engineering Technology - CPS",
+    "INTL": "International Affairs",
+    "INFO": "Information Systems Program",
+    "ASNS": "Asian Studies",
+    "PHTH": "Public Health",
+    "POL": "Political Science - CPS",
+    "ENG": "Political Science - CPS",
+    "BIOC": "Biochemistry",
+    "MECN": "Managerial Economics",
+    "CHEM": "Chemistry and Chemical Biology",
+    "MSCR": "Media and Screen Studies",
+    "CHME": "Chemical Engineering",
+    "MET": "Mechanical Engineering Technology - CPS",
+    "ITC": "Information Technology - CPS",
+    "EET": "Electrical Engineering Technology - CPS",
+    "INMI": "Interdisciplinary Studies - Mills College at Northeastern",
+    "EECE": "Electrical and Computer Engineering",
+    "HSTY": "History - CPS Specialty",
+    "BIOL": "Biology",
+    "PMCL": "Pharmacology",
+    "HLTH": "Health Science - Interdisciplinary",
+    "MATH": "Mathematics",
+    "ORGB": "Organizational Behavior",
+    "EXSC": "Cardiopulmonary and Exercise Science",
+    "SOC": "Sociology - CPS",
+    "MEIE": "Mechanical and Industrial Engineering",
+    "FINA": "Finance and Insurance",
+    "ARAB": "Arabic",
+    "HUSV": "Arabic",
+    "CLTR": "Culture",
+    "CS": "Computer Science",
+    "MATL": "Materials Engineering",
+    "PORT": "Portuguese",
+    "CMN": "Communication Studies - CPS",
+    "HBRW": "Communication Studies - CPS",
+    "INTB": "International Business",
+    "HSC": "Health Science - CPS",
+    "DAMG": "Data Architecture Management",
+    "BIO": "Biology - CPS",
+    "AFCS": "Africana Studies",
+    "PA": "Physician Assistant",
+    "PREL": "Public Relations",
+    "PSYC": "Psychology",
+    "LARC": "Landscape Architecture",
+    "INPR": "Interdisciplinary Studies - Office of the Provost",
+    "PT": "Physical Therapy",
+    "PDM": "Product Management - CPS",
+    "CET": "Computer Engineering Technology - CPS",
+    "HIST": "History",
+    "MUSI": "Music Industry",
+    "ENTR": "Entrepreneurship and Innovation",
+    "JWSS": "Jewish Studies",
+    "FSEM": "First-Year Seminar",
+    "ENGR": "Engineering Interdisciplinary",
+    "PHDL": "PhD Experiential Leadership",
+    "CAEP": "Counseling and Applied Educational Psychology",
+    "CRWT": "Creative Writing",
+    "ARMY": "Army ROTC",
+    "LAW": "Law",
+    "ITLN": "Italian",
+    "POLS": "Political Science",
+    "MKTG": "Marketing",
+    "ENSY": "Energy Systems",
+    "ECON": "Economics",
+    "PPUA": "Public Policy and Urban Affairs",
+    "PHSC": "Pharmaceutical Science",
+    "HRMG": "Human Resources Management",
+    "MGMT": "Management"
+}
+
+bucket_levels = {
+    1000: "Introductory level (first year), for students with no prior background",
+    2000: "Intermediate level (first/sophomore/junior year) includes more rigorous introductory courses and next level courses",
+    3000: "Upper-intermediate level (junior year)",
+    4000: "Advanced level (senior year)",
+    5000: "First-level graduate",
+    6000: "Second-level graduate (Generally for master’s and clinical doctorate only)",
+    7000: "Third-level graduate (Master’s- and doctoral-level courses; includes master’s thesis)",
+    8000: "Clinical/research/readings",
+    9000: "Doctoral research and dissertation"
+}
+
 
 # 3. We will build the prompt shown to the model for the next step
-SYSTEM_PREAMBLE = textwrap.dedent("""\
+SYSTEM_PREAMBLE = f"""
     You are a helpful ReAct agent. You may use tools to answer factual questions.
 
+    Note: The College of Professioanl Studies, aka CPS program is separate from Undergraduate/ Graduate courses so avoid recommending unless the query or context includes CPS.
+    
+    Available subject codes (subject parameter for keyword_search):
+    {json.dumps(subject_codes, indent=2)}
+
+    Available bucket levels:
+    {json.dumps(bucket_levels, indent=2)}
+
+    When the user requests information related to a subject, choose the most appropriate subject code.
+    If uncertain, choose the subject whose full name best matches the user’s query.
+
     Available tools:
-    - search[query="<text>", k=<int>]  # searches a small encyclopedia and returns top-k results
+    - keyword_search[query="<text>", bucketLevel?=<bucketLevel>, subject?=<subject code>]
+    - semantic_search[query="<text>"]
+
     To finish, use: finish[answer="<final answer>"]
 
     Follow the exact step format:
     Thought: <your reasoning>
     Action: <one of the tool calls above, or finish[...]>
-""").strip()
+""".strip()
 
 def make_prompt(user_query: str, trajectory: List[Dict[str, str]]) -> str:
     """
