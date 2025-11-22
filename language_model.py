@@ -10,7 +10,7 @@ tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, trust_remote_code=True)
 
 # ====== TODO ======
 # Load model with AutoModelForCausalLM.from_pretrained() from huggingface with the above MODEL_NAME, LOAD_8BIT, DTYPE
-model = None
+model = AutoModelForCausalLM.from_pretrained(MODEL_NAME, LOAD_8BIT, DTYPE)
 
 # Generation configuration: use GenerationConfig to define the generation parameters
 gen_cfg = None
