@@ -8,13 +8,28 @@ DTYPE        = torch.bfloat16 if torch.cuda.is_available() else torch.float32
 
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, trust_remote_code=True)
 
-# ====== TODO ======
-# Load model with AutoModelForCausalLM.from_pretrained() from huggingface with the above MODEL_NAME, LOAD_8BIT, DTYPE
-model = None
+# ====== Model load ======
+# Load the model from Hugging Face with reasonable defaults for device and dtype.
+# Use 8-bit loading if requested, and map device automatically when CUDA is available.
+device_map = "auto" if torch.cuda.is_available() else {"": "cpu"}
+model = AutoModelForCausalLM.from_pretrained(
+    MODEL_NAME,
+    load_in_8bit=LOAD_8BIT,
+    torch_dtype=DTYPE,
+    trust_remote_code=True,
+    device_map=device_map,
+    low_cpu_mem_usage=True,
+)
 
-# Generation configuration: use GenerationConfig to define the generation parameters
-gen_cfg = None
-# ====== TODO ======
+# Generation configuration: tune defaults for concise, deterministic ReAct-style replies
+gen_cfg = GenerationConfig(
+    temperature=0.0,
+    top_p=0.95,
+    top_k=50,
+    num_beams=1,
+    max_new_tokens=128,
+    pad_token_id=tokenizer.eos_token_id,
+)
 
 # ====== Helper function: Enforce two-line schema in the decoding ======
 T_PATTERN = re.compile(r"Thought:\s*(.+)")
@@ -67,18 +82,24 @@ def hf_llm(prompt: str) -> str:
     format_guard = (
         "\n\nIMPORTANT: Respond with EXACTLY two lines in this format:\n"
         "Thought: <one concise sentence>\n"
-        "Action: <either search[query=\"...\"] or finish[answer=\"...\"]>\n"
+        "Action: <either keyword_search[query=\"<text>\", bucketLevel?=<bucketLevel>, subject?=\"<subject code>\"] or semantic_search[query=\"<text>\"] or finish[answer=\"...\"]>\n"
         "Do NOT include Observation."
     )
     full_prompt = prompt + format_guard
 
-    # ====== TODO ======
-    #     Here, let's write the code to use language model to generate the response given the full_prompt
-    #     First, we need to use the tokenizer to tokenize the prompt into pytorch tensors
-    #     Second, we need to use model.generate() to generate the model response (which includes the Thought and Action)
-    inputs = None
-    output_ids = None
-    # ====== TODO ======
+    # Tokenize the prompt and move tensors to the model's device
+    inputs = tokenizer(full_prompt, return_tensors="pt")
+    device = next(model.parameters()).device
+    inputs = {k: v.to(device) for k, v in inputs.items()}
+
+    # Generate model output. Use the shared `gen_cfg` for generation defaults.
+    with torch.no_grad():
+        output_ids = model.generate(
+            **inputs,
+            generation_config=gen_cfg,
+            pad_token_id=tokenizer.eos_token_id,
+            eos_token_id=tokenizer.eos_token_id,
+        )
 
 
     # Slice off the prompt tokens to get only the completion
