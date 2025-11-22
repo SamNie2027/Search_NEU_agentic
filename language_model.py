@@ -86,7 +86,7 @@ def hf_llm(prompt: str) -> str:
     #     Here, let's write the code to use language model to generate the response given the full_prompt
     #     First, we need to use the tokenizer to tokenize the prompt into pytorch tensors
     #     Second, we need to use model.generate() to generate the model response (which includes the Thought and Action)
-    inputs = tokenizer(full_prompt, return_tensors="pt")
+    inputs = tokenizer(full_prompt, return_tensors="pt").to(model.device)
     output_ids = model.generate(**inputs, generation_config=gen_cfg)
     # ====== TODO ======
 
