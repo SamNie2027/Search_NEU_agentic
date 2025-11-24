@@ -4,10 +4,9 @@
     {% for class in classes %}
     <div class="class-item">
       <div class="class-header">
-        <span class="class-code">{{ class.subject }}{{ class.number }}</span>
         <span class="class-title">{{ class.title }}</span>
       </div>
-      <p class="class-description">{{ class.description }}</p>
+      <p class="class-description">{{ class.snippet }}</p>
     </div>
     {% endfor %}
   </div>
