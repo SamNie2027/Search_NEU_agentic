@@ -100,7 +100,7 @@
                 const credits = creditsFilter.value.trim();
         
                 // Send request to backend with all parameters
-                const response = await fetch('/api/chat', {
+                const response = await fetch('/api/keyword_search', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',

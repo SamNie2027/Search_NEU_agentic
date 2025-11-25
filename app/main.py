@@ -34,7 +34,7 @@ async def home(request: Request):
         "request": request
     })
 
-@app.post("/api/chat", response_class=JSONResponse)
+@app.post("/api/keyword_search", response_class=JSONResponse)
 async def chat(
     message: str = Form(...),
     prefix: str = Form(""),
