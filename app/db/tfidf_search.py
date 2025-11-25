@@ -181,5 +181,3 @@ TOOLS = {
         "fn": lambda answer: {"tool": "finish", "answer": answer}
     }
 }
-
-print(tool_search(query="psychology", credits=5))

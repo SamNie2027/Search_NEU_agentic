@@ -1,7 +1,11 @@
 {
   "ExpandedNodes": [
-    ""
+    "",
+    "\\app",
+    "\\app\\db",
+    "\\templates",
+    "\\venv"
   ],
-  "SelectedNode": "\\C:\\Users\\aidan\\Source\\Repos\\Search_NEU_agentic",
+  "SelectedNode": "\\venv",
   "PreviewInSolutionExplorer": false
 }
