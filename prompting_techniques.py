@@ -351,6 +351,11 @@ SYSTEM_PREAMBLE = f"""
     - keyword_search[query="<text>", bucketLevel?=<bucketLevel>, subject?="<subject code>"]
     - semantic_search[query="<text>"]
 
+    Guidance on tool choice:
+    - Use `keyword_search` when the user supplies short keyword-style queries (course codes, short phrases).
+    - Use `semantic_search` when the user query is a longer natural-language sentence, question, or contains conversational context.
+    The agent may decide which tool to use based on the query; prefer semantic_search for verbose queries and keyword_search for concise ones.
+
     To finish, use: finish[answer="<final answer>"]
 
     Follow the exact step format:
