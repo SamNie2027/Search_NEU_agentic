@@ -32,40 +32,34 @@ gen_cfg = GenerationConfig(
 )
 
 # ====== Helper function: Enforce two-line schema in the decoding ======
-T_PATTERN = re.compile(r"Thought:\s*(.+)")
-A_PATTERN = re.compile(r"Action:\s*(.+)")
+T_PATTERN = re.compile(r"Thought:\s*(.*)")
+
 
 def _postprocess_to_two_lines(text: str) -> str:
     """
-    Extract the first 'Thought:' and 'Action:' lines from the model output.
-    If the model drifts, fall back to a conservative default Action.
+    Robustly extract exactly two lines: Thought and Action.
+    - Truncate at the first 'Observation:' if present.
+    - Find the first 'Thought:' line and the first bracketed Action (non-greedy).
+    - If the model echoes prompt content (Observations, system preamble, role tokens), ignore that and return safe defaults.
     """
-    # Stop at first Observation if present (model shouldn't produce it, but just in case)
-    text = text.split("\nObservation:")[0]
-    # Keep only the assistant's new tokens (strip any trailing commentary)
-    lines = [ln.strip() for ln in text.strip().splitlines() if ln.strip()]
+    # Defensive truncation at Observation
+    text = (text or "").split("\nObservation:", 1)[0].strip()
 
-    # Try to find explicit Thought/Action anywhere in the output
+    # Extract Thought (first 'Thought:' line)
     thought = None
-    action  = None
-    for ln in lines:
-        if thought is None:
-            m = T_PATTERN.match(ln)
-            if m:
-                thought = m.group(1).strip()
-                continue
-        if action is None:
-            m = A_PATTERN.match(ln)
-            if m:
-                action = m.group(1).strip()
-                continue
+    m_t = re.search(r"Thought:\s*(.*)", text)
+    if m_t:
+        thought = m_t.group(1).splitlines()[0].strip()
 
-    # Fallbacks if the model didn’t comply perfectly
-    if thought is None:
+    # Extract Action: capture NAME[...] non-greedy so trailing tokens are not included.
+    a_match = re.search(r"Action:\s*([a-z_]+\[.*?\])", text, flags=re.IGNORECASE | re.DOTALL)
+    action = a_match.group(1).strip() if a_match else None
+
+    # Fallbacks if model failed to follow format
+    if not thought:
         thought = "I should search for key facts related to the question."
-    if action is None:
-        # Default to a generic search; your controller will parse it.
-        action = 'search[query="(auto) refine the user question", k=3]'
+    if not action:
+        action = 'semantic_search[query="(auto) refine the user question", k=3]'
 
     return f"Thought: {thought}\nAction: {action}"
 # ====== Helper function: Enforce two-line schema in the decoding ======
@@ -93,13 +87,23 @@ def hf_llm(prompt: str) -> str:
     inputs = {k: v.to(device) for k, v in inputs.items()}
 
     # Generate model output. Use the shared `gen_cfg` for generation defaults.
+    # Discourage the model from emitting role tokens or 'Observation' by passing bad_words_ids when possible.
+    bad_words = ["Observation:", "Observation", "Human:", "Human", "Assistant:", "Assistant"]
+    try:
+        bad_words_ids = [tokenizer.encode(w, add_special_tokens=False) for w in bad_words]
+    except Exception:
+        bad_words_ids = None
+
     with torch.no_grad():
-        output_ids = model.generate(
-            **inputs,
+        gen_kwargs = dict(
             generation_config=gen_cfg,
             pad_token_id=tokenizer.eos_token_id,
             eos_token_id=tokenizer.eos_token_id,
         )
+        if bad_words_ids:
+            gen_kwargs["bad_words_ids"] = bad_words_ids
+
+        output_ids = model.generate(**inputs, **gen_kwargs)
 
 
     # Slice off the prompt tokens to get only the completion

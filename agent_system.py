@@ -26,7 +26,8 @@ class Step:
     thought: str
     action: str
     observation: str
-
+    llm_output: str = ""
+    
 @dataclass
 class AgentConfig:
     max_steps: int = 6
@@ -35,7 +36,7 @@ class AgentConfig:
     verbose: bool = True
 
 class ReActAgent:
-    def __init__(self, llm: Callable[[str], str], tools: Dict[str, Dict[str, Any]], config: AgentConfig | None=None):
+    def __init__(self, llm: Callable[[str], str], tools: Dict[str, Dict[str, Any]], config: Optional[AgentConfig]=None):
         self.llm = llm
         self.tools = tools
         self.config = config or AgentConfig()
@@ -46,6 +47,7 @@ class ReActAgent:
     def run(self, user_query: str) -> Dict[str, Any]:
         self.trajectory.clear()
         self._recent_action_counts.clear()
+        final_answer_from_tool = None
         for step_idx in range(self.config.max_steps):
             # 1. At each step, format the prompt based on the make_prompt function and self.trajectory
             # `make_prompt` expects the trajectory as a list of dicts with keys: thought, action, observation
@@ -57,6 +59,10 @@ class ReActAgent:
             except Exception as e:
                 out = f"Thought: (llm error)\nAction: finish[answer=\"LLM error: {e}\"]"
 
+            # If verbose, print the raw LLM output immediately (intermediate output)
+            if self.config.verbose:
+                print(f"\n--- Intermediate output (step {step_idx+1}) ---")
+                print(out)
             # Expect two lines: Thought:..., Action:...
             t_match = re.search(r"Thought:\s*(.*)", out)
             a_match = re.search(r"Action:\s*(.*)", out)
@@ -73,9 +79,16 @@ class ReActAgent:
 
             if not parsed:
                 observation = "Invalid action format. Stopping."
-                self.trajectory.append(Step(thought, action_line, observation))
+                self.trajectory.append(Step(thought, action_line, observation, out))
                 break
             name, args = parsed
+
+            # If the model emitted a placeholder query (used as a formatting fallback),
+            # replace it with the real user_query so the agent executes a meaningful search.
+            if isinstance(args, dict):
+                q = args.get("query") if "query" in args else None
+                if isinstance(q, str) and q.strip().lower().startswith("(auto)"):
+                    args["query"] = user_query
 
 
             # Detect repeated identical actions (same tool name and args) and stop
@@ -90,18 +103,18 @@ class ReActAgent:
                 # Append a finish step so the agent ends gracefully with a clear message.
                 finish_action = 'Action: finish[answer="Stopped after repeated action: %s"]' % (name,)
                 observation = f"Repeated action '{name}' executed {self._recent_action_counts[action_key]} times. Halting to avoid loop."
-                self.trajectory.append(Step(thought, finish_action, observation))
+                self.trajectory.append(Step(thought, finish_action, observation, out))
                 break
 
 
             if name == "finish":
                 observation = "done"
-                self.trajectory.append(Step(thought, action_line, observation))
+                self.trajectory.append(Step(thought, action_line, observation, out))
                 break
 
             if name not in self.config.allow_tools or name not in self.tools:
                 observation = f"Action '{name}' not allowed or not found."
-                self.trajectory.append(Step(thought, action_line, observation))
+                self.trajectory.append(Step(thought, action_line, observation, out))
                 break
 
             # 4. Execute the action
@@ -111,21 +124,46 @@ class ReActAgent:
             except Exception as e:
                 observation = f"Tool error: {e}"
 
-            self.trajectory.append(Step(thought, action_line, observation))
+            self.trajectory.append(Step(thought, action_line, observation, out))
 
-        # Build final answer from last finish action if present
+            # If verbose, print the parsed thought/action and resulting observation now
+            if self.config.verbose:
+                print(f"Thought: {thought}")
+                print(f"Action: {action_line}")
+                print(f"Observation: {observation}\n")
+
+            # If the tool returned a search payload, use it as the final answer and stop.
+            try:
+                obs_obj = json.loads(observation)
+            except Exception:
+                obs_obj = None
+            if isinstance(obs_obj, dict) and obs_obj.get("tool") == "search":
+                final_answer_from_tool = obs_obj
+                break
+        # Prefer returning the last search tool payload (if present) as the final answer
         final_answer = None
         for s in reversed(self.trajectory):
-            # s.action is stored as e.g. 'Action: finish[answer="..."]'. Normalize by
-            # stripping a leading 'Action:' if present then checking for finish[...].
-            action_text = s.action
-            if action_text.lower().startswith("action:"):
-                action_text = action_text[len("Action:"):].strip()
-            if action_text.startswith("finish["):
-                m = re.search(r'answer="(.*)"', action_text)
-                if m:
-                    final_answer = m.group(1)
-                    break
+            # Try to parse the observation as JSON and see if it's a search payload
+            try:
+                obs_obj = json.loads(s.observation)
+            except Exception:
+                obs_obj = None
+
+            if isinstance(obs_obj, dict) and obs_obj.get("tool") == "search" and "results" in obs_obj:
+                final_answer = obs_obj
+                break
+
+        # If no search payload found, fall back to extracting a finish[...] answer string
+        if final_answer is None:
+            for s in reversed(self.trajectory):
+                action_text = s.action
+                if action_text.lower().startswith("action:"):
+                    action_text = action_text[len("Action:"):].strip()
+                if action_text.startswith("finish["):
+                    m = re.search(r'answer="(.*)"', action_text)
+                    if m:
+                        final_answer = m.group(1)
+                        break
 
         return {
             "question": user_query,

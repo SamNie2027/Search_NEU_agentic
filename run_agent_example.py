@@ -10,6 +10,7 @@ returns a final answer.
 """
 from agent_system import ReActAgent, AgentConfig
 import language_model as lm
+import json
 
 # Import the real search modules from the project. These imports are required
 # — the example will raise ImportError immediately if the project's search
@@ -67,12 +68,17 @@ if __name__ == '__main__':
         config=AgentConfig(max_steps=6)
     )
 
-    question = "What is CS 5100 (Intro to AI) about and how many credits is it?"
+    question = "I love chocolate"
     result = agent.run(question)
 
     print("\n--- AGENT RUN RESULT ---")
     print(f"Question: {result['question']}")
-    print(f"Final answer: {result['final_answer']}")
+    fa = result['final_answer']
+    if isinstance(fa, dict):
+        print("Final answer (search payload):")
+        print(json.dumps(fa, ensure_ascii=False, indent=2))
+    else:
+        print(f"Final answer: {fa}")
     print("Steps:")
     for i, s in enumerate(result['steps'], 1):
         print(f"Step {i} - Thought: {s['thought']}")

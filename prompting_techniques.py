@@ -361,8 +361,8 @@ SYSTEM_PREAMBLE = f"""
 
     Examples (produce EXACTLY two lines in these formats):
     Example 1 (keyword search):
-    Thought: I should search for the course by code to find the description.
-    Action: keyword_search[query="CS 5100", k=3]
+    Thought: I should search for the course by code (CS 5100) to find the description.
+    Action: keyword_search[query="CS 5100", subjectCode="CS", bucketLevel="5000" k=3]
 
     Example 2 (semantic search):
     Thought: The user's question is conversational; use semantic search for context.
