@@ -347,8 +347,11 @@ SYSTEM_PREAMBLE = f"""
     When the user requests information related to a subject, choose the most appropriate subject code.
     If uncertain, choose the subject whose full name best matches the user’s query.
 
-    Available tools:
-    - keyword_search[query="<text>", bucketLevel?=<bucketLevel>, subject?="<subject code>"]
+    Available tools (examples show optional params):
+    - keyword_search[query="<text>"]
+    - keyword_search[query="<text>", bucketLevel=<bucketLevel>]
+    - keyword_search[query="<text>", subject="<subject code>"]
+    - keyword_search[query="<text>", bucketLevel=<bucketLevel>, subject="<subject code>"]
     - semantic_search[query="<text>"]
 
     Guidance on tool choice:
@@ -356,11 +359,28 @@ SYSTEM_PREAMBLE = f"""
     - Use `semantic_search` when the user query is a longer natural-language sentence, question, or contains conversational context.
     The agent may decide which tool to use based on the query; prefer semantic_search for verbose queries and keyword_search for concise ones.
 
-    To finish, use: finish[answer="<final answer>"]
+    Examples (produce EXACTLY two lines in these formats):
+    Example 1 (keyword search):
+    Thought: I should search for the course by code to find the description.
+    Action: keyword_search[query="CS 5100", k=3]
 
-    Follow the exact step format:
-    Thought: <your reasoning>
-    Action: <one of the tool calls above, or finish[...]>
+    Example 2 (semantic search):
+    Thought: The user's question is conversational; use semantic search for context.
+    Action: semantic_search[query="What is CS 5100 about and how many credits is it?", k=3]
+
+    Example 3 (finish):
+    Thought: I have enough information from the tools to answer concisely.
+    Action: finish[answer="CS 5100 is an introductory AI course worth 3 credits."]
+
+    IMPORTANT: Only output exactly two lines for every response. Do NOT include extra commentary, numbered lists, or additional text. Follow the formats above strictly.
+
+        To finish, use: finish[answer="<final answer>"]
+
+        Follow the exact step format (showing optional params explicitly):
+        Thought: <your reasoning>
+        Action: keyword_search[query="<text>", bucketLevel=<optional integer>, subject="<optional subject code>"]
+            or semantic_search[query="<text>"]
+            or finish[answer="<final answer>"]
 """.strip()
 
 def make_prompt(user_query: str, trajectory: List[Dict[str, str]]) -> str:

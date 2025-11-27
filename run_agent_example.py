@@ -9,6 +9,7 @@ how the agent constructs prompts, calls the LLM, executes tools, and
 returns a final answer.
 """
 from agent_system import ReActAgent, AgentConfig
+import language_model as lm
 
 # Import the real search modules from the project. These imports are required
 # — the example will raise ImportError immediately if the project's search
@@ -17,35 +18,6 @@ from agent_system import ReActAgent, AgentConfig
 from app.db import tfidf_search as tfidf_mod
 from app.db import load_embeddings as load_mod
 from app.db import embedding_search as emb_mod
-
-# A fake LLM that returns two-step responses. It ignores the prompt
-# content for simplicity and returns a Thought/Action pair.
-def make_fake_llm():
-    calls = {"n": 0}
-    def fake_llm(prompt: str) -> str:
-        calls["n"] += 1
-        # Extract the user question from the prompt so the fake LLM can 'decide'
-        uq = ""
-        m = None
-        try:
-            # prompt includes a line like: User Question: <text>\n\n
-            m = [ln for ln in prompt.splitlines() if ln.strip().startswith("User Question:")]
-            if m:
-                uq = m[0].split("User Question:", 1)[1].strip()
-        except Exception:
-            uq = ""
-
-        # If the user question is long (many words) prefer semantic_search, otherwise keyword_search
-        word_count = len(uq.split()) if uq else 0
-        if calls["n"] == 1:
-            if word_count > 6:
-                return 'Thought: The user asked a longer question; semantic similarity will help.\nAction: semantic_search[query="' + uq.replace('"', '\\"') + '", k=3]'
-            else:
-                return 'Thought: I should search for the course details.\nAction: keyword_search[query="CS 5100 course description", k=2]'
-        else:
-            # finish with a concise answer based on the (simulated) observation
-            return 'Thought: I found the course info, now finish.\nAction: finish[answer="CS 5100 (Intro to AI) covers core AI techniques including search, logic, and learning; typically 3 credits."]'
-    return fake_llm
 
 # A simple search tool that returns structured results.
 def keyword_search(query: str, k: int = 3, bucketLevel: int | None = None, subject: str | None = None):
@@ -57,9 +29,11 @@ def keyword_search(query: str, k: int = 3, bucketLevel: int | None = None, subje
     if not hasattr(tfidf_mod, "tool_search"):
         raise RuntimeError("app.db.tfidf_search.tool_search is not available")
 
+    # Call the project's TF-IDF search implementation and return its payload.
+    # Note: when this module is imported the example-runner's `main()` should
+    # not execute; only the TF-IDF tool should run when the agent calls it.
     payload = tfidf_mod.tool_search(query=query, bucketLevel=bucketLevel, subject=subject, credits=None, k=k)
-    # Expect payload to contain a 'results' list of dicts
-    return {"query": query, "results": payload.get("results", [])}
+    return payload
 
 
 def semantic_search(query: str, k: int = 3):
@@ -80,7 +54,8 @@ def semantic_search(query: str, k: int = 3):
     return {"query": query, "results": results}
 
 if __name__ == '__main__':
-    llm = make_fake_llm()
+    # Use the repository's real LLM implementation by default
+    llm = lm.LLM
     tools = {
         "keyword_search": {"fn": keyword_search},
         "semantic_search": {"fn": semantic_search},
@@ -103,3 +78,23 @@ if __name__ == '__main__':
         print(f"Step {i} - Thought: {s['thought']}")
         print(f"         Action: {s['action']}")
         print(f"         Observation: {s['observation']}\n")
+
+
+def run_agent_with_real_llm(question: str, max_steps: int = 6):
+    """
+    Build an agent wired to the repository's real LLM (`language_model.LLM`) and run it.
+    Returns the agent run result dict. This accepts a `question` prompt string.
+    """
+    tools = {
+        "keyword_search": {"fn": keyword_search},
+        "semantic_search": {"fn": semantic_search},
+    }
+
+    agent = ReActAgent(
+        llm=lm.LLM,
+        tools=tools,
+        config=AgentConfig(max_steps=max_steps)
+    )
+
+    return agent.run(question)
+

@@ -40,9 +40,12 @@ class ReActAgent:
         self.tools = tools
         self.config = config or AgentConfig()
         self.trajectory: List[Step] = []
+        # Track recent identical actions to avoid infinite repeating loops
+        self._recent_action_counts: Dict[str, int] = {}
 
     def run(self, user_query: str) -> Dict[str, Any]:
         self.trajectory.clear()
+        self._recent_action_counts.clear()
         for step_idx in range(self.config.max_steps):
             # 1. At each step, format the prompt based on the make_prompt function and self.trajectory
             # `make_prompt` expects the trajectory as a list of dicts with keys: thought, action, observation
@@ -59,6 +62,10 @@ class ReActAgent:
             a_match = re.search(r"Action:\s*(.*)", out)
             thought = t_match.group(1).strip() if t_match else "(no thought)"
             action_line = a_match.group(1).strip() if a_match else "finish[answer=\"(no action)\"]"
+            # If the captured text already contains a stray 'Action:' prefix (e.g. "Action: finish[...]")
+            # remove it to avoid producing "Action: Action: ...". Be defensive about casing/whitespace.
+            if re.match(r"^\s*Action:\s*", action_line, flags=re.IGNORECASE):
+                action_line = re.sub(r"^\s*Action:\s*", "", action_line, flags=re.IGNORECASE)
             action_line = "Action: " + action_line
 
             # 3. Parse the action of the action line using the parse_action function
@@ -69,6 +76,22 @@ class ReActAgent:
                 self.trajectory.append(Step(thought, action_line, observation))
                 break
             name, args = parsed
+
+
+            # Detect repeated identical actions (same tool name and args) and stop
+            # after a small number of repetitions to avoid infinite loops when
+            # the model keeps producing the same action without progress.
+            try:
+                action_key = name + ":" + json.dumps(args, sort_keys=True)
+            except Exception:
+                action_key = name
+            self._recent_action_counts[action_key] = self._recent_action_counts.get(action_key, 0) + 1
+            if self._recent_action_counts[action_key] >= 3:
+                # Append a finish step so the agent ends gracefully with a clear message.
+                finish_action = 'Action: finish[answer="Stopped after repeated action: %s"]' % (name,)
+                observation = f"Repeated action '{name}' executed {self._recent_action_counts[action_key]} times. Halting to avoid loop."
+                self.trajectory.append(Step(thought, finish_action, observation))
+                break
 
 
             if name == "finish":
@@ -93,8 +116,13 @@ class ReActAgent:
         # Build final answer from last finish action if present
         final_answer = None
         for s in reversed(self.trajectory):
-            if s.action.startswith("finish["):
-                m = re.search(r'answer="(.*)"', s.action)
+            # s.action is stored as e.g. 'Action: finish[answer="..."]'. Normalize by
+            # stripping a leading 'Action:' if present then checking for finish[...].
+            action_text = s.action
+            if action_text.lower().startswith("action:"):
+                action_text = action_text[len("Action:"):].strip()
+            if action_text.startswith("finish["):
+                m = re.search(r'answer="(.*)"', action_text)
                 if m:
                     final_answer = m.group(1)
                     break
