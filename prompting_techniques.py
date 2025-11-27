@@ -338,7 +338,7 @@ SYSTEM_PREAMBLE = f"""
 
     Note: The College of Professioanl Studies, aka CPS program is separate from Undergraduate/ Graduate courses so avoid recommending unless the query or context includes CPS.
     
-    Available subject codes (subject parameter for keyword_search):
+    Available subject codes (subject parameter for keyword_search) can ONLY assign subject to these:
     {json.dumps(subject_codes, indent=2)}
 
     Available bucket levels:
@@ -355,7 +355,7 @@ SYSTEM_PREAMBLE = f"""
     - semantic_search[query="<text>"]
 
     Guidance on tool choice:
-    - Use `keyword_search` when the user supplies short keyword-style queries (course codes, short phrases).
+    - Use `keyword_search` when the user supplies queries that search on all words as keywords without semantic meaning. Best to provide as many keywords as possible.
     - Use `semantic_search` when the user query is a longer natural-language sentence, question, or contains conversational context.
     The agent may decide which tool to use based on the query; prefer semantic_search for verbose queries and keyword_search for concise ones.
 

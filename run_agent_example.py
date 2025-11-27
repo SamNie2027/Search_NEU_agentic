@@ -54,21 +54,17 @@ def semantic_search(query: str, k: int = 3):
     results = [{"id": h.get("id"), "title": h.get("title"), "snippet": h.get("text"), "score": h.get("score")} for h in hits]
     return {"query": query, "results": results}
 
-if __name__ == '__main__':
-    # Use the repository's real LLM implementation by default
-    llm = lm.LLM
+
+def run_and_print(question: str, max_steps: int = 6):
+    """Run the agent for `question` and print the formatted result.
+
+    Returns the agent result dict.
+    """
     tools = {
         "keyword_search": {"fn": keyword_search},
         "semantic_search": {"fn": semantic_search},
     }
-    # Use the AgentConfig default allow_tools so both searches are permitted
-    agent = ReActAgent(
-        llm=llm,
-        tools=tools,
-        config=AgentConfig(max_steps=6)
-    )
-
-    question = "I love chocolate"
+    agent = ReActAgent(llm=lm.LLM, tools=tools, config=AgentConfig(max_steps=max_steps))
     result = agent.run(question)
 
     print("\n--- AGENT RUN RESULT ---")
@@ -84,6 +80,19 @@ if __name__ == '__main__':
         print(f"Step {i} - Thought: {s['thought']}")
         print(f"         Action: {s['action']}")
         print(f"         Observation: {s['observation']}\n")
+
+if __name__ == '__main__':
+    # Use the repository's real LLM implementation by default
+    llm = lm.LLM
+    tools = {
+        "keyword_search": {"fn": keyword_search},
+        "semantic_search": {"fn": semantic_search},
+    }
+    # Use the AgentConfig default allow_tools so both searches are permitted
+    
+    # Example run (keep for script usage)
+    question = "What challenging uperclassmen class can I learn Python in?"
+    run_and_print(question)
 
 
 def run_agent_with_real_llm(question: str, max_steps: int = 6):
