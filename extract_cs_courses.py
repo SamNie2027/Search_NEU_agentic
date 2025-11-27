@@ -1221,10 +1221,27 @@ def extract_all_courses(json_data):
 if __name__ == "__main__":
     courses = extract_all_courses(json_data)
     
-    # Write as JSON
-    with open("cs_major_courses.json", "w") as f:
-        json.dump(courses, f, indent=2)
+    # Convert from string format ("CS 2500") to structured format ({"subject": "CS", "number": 2500})
+    structured_courses = []
+    for course_str in courses:
+        parts = course_str.strip().split()
+        if len(parts) >= 2:
+            subject = parts[0].upper()
+            try:
+                number = int(parts[1])
+                structured_courses.append({"subject": subject, "number": number})
+            except ValueError:
+                # Skip invalid course numbers
+                continue
     
-    print(f"Extracted {len(courses)} unique courses")
-    print(f"Saved to cs_major_courses.json")
+    # Sort by subject, then by number
+    structured_courses.sort(key=lambda x: (x["subject"], x["number"]))
+    
+    # Write to JSON
+    output_data = {"CS": structured_courses}
+    with open("cs_major_requirements.json", "w") as f:
+        json.dump(output_data, f, indent=2)
+    
+    print(f"Extracted {len(structured_courses)} unique courses")
+    print(f"Saved to cs_major_requirements.json")
 
