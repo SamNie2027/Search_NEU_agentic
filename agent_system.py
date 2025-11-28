@@ -34,6 +34,9 @@ class AgentConfig:
     # Accept both keyword and semantic search by default so the model can choose
     allow_tools: Tuple[str, ...] = ("keyword_search", "semantic_search")
     verbose: bool = True
+    # If True, stop the agent immediately after executing the first tool
+    # (useful when you only want the model to perform a single search).
+    stop_after_first_tool: bool = False
 
 class ReActAgent:
     def __init__(self, llm: Callable[[str], str], tools: Dict[str, Dict[str, Any]], config: Optional[AgentConfig]=None):
@@ -59,10 +62,12 @@ class ReActAgent:
             except Exception as e:
                 out = f"Thought: (llm error)\nAction: finish[answer=\"LLM error: {e}\"]"
 
-            # If verbose, print the raw LLM output immediately (intermediate output)
-            if self.config.verbose:
-                print(f"\n--- Intermediate output (step {step_idx+1}) ---")
-                print(out)
+            # UNCOMMENT FOR LOGGING
+            # # If verbose, print the raw LLM output immediately (intermediate output)
+            # if self.config.verbose:
+            #     print(f"\n--- Intermediate output (step {step_idx+1}) ---")
+            #     print(out)
+
             # Expect two lines: Thought:..., Action:...
             t_match = re.search(r"Thought:\s*(.*)", out)
             a_match = re.search(r"Action:\s*(.*)", out)
@@ -126,11 +131,18 @@ class ReActAgent:
 
             self.trajectory.append(Step(thought, action_line, observation, out))
 
-            # If verbose, print the parsed thought/action and resulting observation now
-            if self.config.verbose:
-                print(f"Thought: {thought}")
-                print(f"Action: {action_line}")
-                print(f"Observation: {observation}\n")
+            # If configured to stop after the first tool execution, break
+            # the loop here so the agent performs exactly one search/tool
+            # invocation and then returns.
+            if getattr(self.config, "stop_after_first_tool", False):
+                break
+
+            # UNCOMMENT FOR LOGGING
+            # # If verbose, print the parsed thought/action and resulting observation now
+            # if self.config.verbose:
+            #     print(f"Thought: {thought}")
+            #     print(f"Action: {action_line}")
+            #     print(f"Observation: {observation}\n")
 
             # If the tool returned a search payload, use it as the final answer and stop.
             try:
@@ -164,9 +176,17 @@ class ReActAgent:
                     if m:
                         final_answer = m.group(1)
                         break
+                        
+        # Also expose the first observed search `results` (if any) at the
+        # top-level return so callers can access it directly without a helper.
+        results = None
+        for s in self.trajectory:
+            try:
+                obj = json.loads(s.observation)
+            except Exception:
+                obj = None
+            if isinstance(obj, dict) and "results" in obj:
+                results = obj["results"]
+                break
 
-        return {
-            "question": user_query,
-            "final_answer": final_answer,
-            "steps": [asdict(s) for s in self.trajectory]
-        }
+        return results

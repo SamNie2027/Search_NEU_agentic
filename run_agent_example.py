@@ -64,7 +64,9 @@ def run_and_print(question: str, max_steps: int = 6):
         "keyword_search": {"fn": keyword_search},
         "semantic_search": {"fn": semantic_search},
     }
-    agent = ReActAgent(llm=lm.LLM, tools=tools, config=AgentConfig(max_steps=max_steps))
+    # Configure the agent to stop after the first tool call so the example
+    # performs exactly one search and returns.
+    agent = ReActAgent(llm=lm.LLM, tools=tools, config=AgentConfig(max_steps=max_steps, stop_after_first_tool=True))
     result = agent.run(question)
 
     print("\n--- AGENT RUN RESULT ---")
@@ -81,18 +83,6 @@ def run_and_print(question: str, max_steps: int = 6):
         print(f"         Action: {s['action']}")
         print(f"         Observation: {s['observation']}\n")
 
-if __name__ == '__main__':
-    # Use the repository's real LLM implementation by default
-    llm = lm.LLM
-    tools = {
-        "keyword_search": {"fn": keyword_search},
-        "semantic_search": {"fn": semantic_search},
-    }
-    # Use the AgentConfig default allow_tools so both searches are permitted
-    
-    # Example run (keep for script usage)
-    question = "What challenging uperclassmen class can I learn Python in?"
-    run_and_print(question)
 
 
 def run_agent_with_real_llm(question: str, max_steps: int = 6):
@@ -108,8 +98,21 @@ def run_agent_with_real_llm(question: str, max_steps: int = 6):
     agent = ReActAgent(
         llm=lm.LLM,
         tools=tools,
-        config=AgentConfig(max_steps=max_steps)
+        config=AgentConfig(max_steps=max_steps, stop_after_first_tool=True)
     )
 
     return agent.run(question)
 
+
+if __name__ == '__main__':
+    # Use the repository's real LLM implementation by default
+    llm = lm.LLM
+    tools = {
+        "keyword_search": {"fn": keyword_search},
+        "semantic_search": {"fn": semantic_search},
+    }
+    # Use the AgentConfig default allow_tools so both searches are permitted
+    
+    # Example run (keep for script usage)
+    question = "What challenging uperclassmen class can I learn Python in?"
+    print(run_agent_with_real_llm(question))
