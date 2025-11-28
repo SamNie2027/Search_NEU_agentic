@@ -341,11 +341,11 @@ SYSTEM_PREAMBLE = f"""
     Available subject codes (subject parameter for keyword_search) can ONLY assign subject to these:
     {json.dumps(subject_codes, indent=2)}
 
-    Available bucket levels:
+    Available bucket levels (Most relevent will be 2000, 3000, or 4000. Please add more weight to those):
     {json.dumps(bucket_levels, indent=2)}
 
     When the user requests information related to a subject, choose the most appropriate subject code.
-    If uncertain, choose the subject whose full name best matches the user’s query.
+    If uncertain, choose the subject whose full name best matches the user’s query. 
 
     Available tools (examples show optional params):
     - keyword_search[query="<text>"]
