@@ -6,6 +6,7 @@ import os
 
 from fastapi import FastAPI, Request, Form
 from db import queries as queries
+from db import tfidf_search as tfidf
 import numpy as np
 
 # Ensure repository root is on sys.path so top-level packages (e.g. `scripts`)
@@ -34,18 +35,50 @@ async def home(request: Request):
     })
 
 @app.post("/api/chat", response_class=JSONResponse)
-async def chat(message: str = Form(...)): 
+async def chat(
+    message: str = Form(...),
+    prefix: str = Form(""),
+    bucket: str = Form("None"),
+    credits: str = Form("")
+): 
     keyword = message.lower().strip()
-    print(keyword)
-    # Search for courses
-    result = queries.search_courses_by_title_safe(keyword, 5)
     
-    if result:
-        json_string = json.dumps(result, default=my_object_encoder)
-        classes = json.loads(json_string)
+    # Convert credits to int (handle empty string)
+    try:
+        credits_int = int(credits) if credits else None
+    except ValueError:
+        credits_int = None
+    
+    # Convert bucket to int or None
+    try:
+        bucket_int = int(bucket) if bucket != "None" else None
+    except ValueError:
+        bucket_int = None
+    
+    # Build kwargs only with non-None/non-empty values
+    search_kwargs = {"query": keyword}
+    
+    if bucket_int is not None:
+        search_kwargs["bucketLevel"] = bucket_int
+    
+    if prefix:  # Only add if not empty string
+        search_kwargs["subject"] = prefix
+    
+    if credits_int is not None:
+        search_kwargs["credits"] = credits_int
+    
+    # Search for courses with filters
+    result = tfidf.tool_search(**search_kwargs)
+    
+    # Extract the results list from the dictionary
+    if result and isinstance(result, dict) and 'results' in result:
+        classes = result['results']
+    elif result:
+        classes = result
     else:
         classes = []
-    
+
+    print(classes)
     # Render template
     if classes:
         html_content = templates.get_template("ClassListTemplate.html").render({"classes": classes})

@@ -9,70 +9,110 @@
         <!-- Messages will be added here dynamically -->
     </div>
 
-    <!-- Input area -->
     <div class="input-container">
-      <input type="text" class="message-input" placeholder="Type a message...">
+        <div>
+        <h3>Optional Filters:</h3>
+        <!-- Input area -->
+        <div    class="inputContainer">
+            <label> Prefix: </label>
+            <input type="text" class="prefix-input" placeholder="CS, POLS, etc.">
+        </div>
+
+        <!-- Input area -->
+        <div    class="inputContainer">
+            <label> Class Level: </label>
+            <select id="bucket-filter">
+                <option value=None>All Levels</option>
+                <option value=1000>1000-1999</option>
+                <option value=2000>2000-2999</option>
+                <option value=3000>3000-3999</option>
+                <option value=4000>4000-4999</option>
+                <option value=5000>5000-5999</option>
+                <option value=6000>6000-6999</option>
+                <option value=7000>7000-7999</option>
+                <option value=8000>8000-8999</option>
+                <option value=9000>9000+</option>
+            </select>
+        </div>
+
+        <!-- Input area -->
+        <div    class="inputContainer">
+            <label> Credits: </label> 
+            <input type="number" class="credits-filter" placeholder="How many Credits...">
+        </div>
+    </div>
+      <h3>Make your query here:</h3>
+      <input type="text" class="message-input" placeholder="What sort of topic do you want to learn..." style= "width: 400px; height:80px">
       <button class="send-button">Send</button>
     </div>
     <script>
-        // Get elements
-        const chatContainer = document.querySelector('.chat-container'); // or wherever messages should appear
-        const messageInput = document.querySelector('.message-input');
-        const sendButton = document.querySelector('.send-button');
+    // Get elements
+    const chatContainer = document.querySelector('.chat-container'); // or wherever messages should appear
+    const messageInput = document.querySelector('.message-input');
+    const sendButton = document.querySelector('.send-button');
 
-        // Function to add a message to the chat
-        function addMessage(content, isUser = false) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = isUser ? 'message user-message' : 'message bot-message';
-    
-            const contentDiv = document.createElement('div');
-            contentDiv.className = 'message-content';
-    
-            if (isUser) {
-                contentDiv.textContent = content;
-            } else {
-                contentDiv.innerHTML = content;
-            }
-    
-            messageDiv.appendChild(contentDiv);
-    
-            // Insert before the input container
-            const inputContainer = document.querySelector('.input-container');
-            inputContainer.parentNode.insertBefore(messageDiv, inputContainer);
-    
-            // Scroll to bottom
-            window.scrollTo(0, document.body.scrollHeight);
+    // Function to add a message to the chat
+    function addMessage(content, isUser = false) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = isUser ? 'message user-message' : 'message bot-message';
+
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'message-content';
+
+        if (isUser) {
+            contentDiv.textContent = content;
+        } else {
+            contentDiv.innerHTML = content;
         }
+
+        messageDiv.appendChild(contentDiv);
+
+        // Insert before the input container
+        const inputContainer = document.querySelector('.input-container');
+        inputContainer.parentNode.insertBefore(messageDiv, inputContainer);
+
+        // Scroll to bottom
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+        // Get filter elements
+        const prefixInput = document.querySelector('.prefix-input');
+        const bucketFilter = document.querySelector('#bucket-filter');
+        const creditsFilter = document.querySelector('.credits-filter');
 
         // Function to send message
         async function sendMessage() {
             const message = messageInput.value.trim();
-    
+
             if (!message) return;
-    
+
             // Add user message to chat
             addMessage(message, true);
-    
+
             // Clear input and disable button
             messageInput.value = '';
             sendButton.disabled = true;
             sendButton.textContent = 'Sending...';
-    
+
             try {
-                // Send request to backend
+                const prefix = prefixInput.value.trim();
+                const bucket = bucketFilter.value;
+                const credits = creditsFilter.value.trim();
+        
+                // Send request to backend with all parameters
                 const response = await fetch('/api/chat', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                     },
-                    body: `message=${encodeURIComponent(message)}`
+                    body: `message=${encodeURIComponent(message)}&prefix=${encodeURIComponent(prefix)}&bucket=${encodeURIComponent(bucket)}&credits=${encodeURIComponent(credits)}`
                 });
-        
+
                 const data = await response.json();
-        
+
                 // Add bot response to chat
                 addMessage(data.response, false);
-        
+
             } catch (error) {
                 console.error('Error:', error);
                 addMessage('<p>Sorry, there was an error processing your request.</p>', false);
