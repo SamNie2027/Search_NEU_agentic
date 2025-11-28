@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
-from sqlalchemy import func, text
+from sqlalchemy import func, text, or_
 from sqlalchemy.orm import Session
 
 from .models import Course, resolve_course_model
@@ -74,6 +74,45 @@ def random_courses(session: Session, n: int = 3) -> List[Course]:
 	q = session.query(Model).order_by(func.random()).limit(int(n))  # type: ignore[arg-type]
 	return list(q)
 
+def get_courses_by_codes(session: Session, course_codes: List[Tuple[str, int]]) -> List[Course]:
+	"""
+	Return all courses matching the provided list of course codes.
+	
+	Args:
+		session: SQLAlchemy session
+		course_codes: List of (subject, number) tuples to match
+		
+	Returns:
+		List of Course objects matching any of the provided codes
+	"""
+	if not course_codes:
+		return []
+	
+	Model = _course_model_from_session(session)
+	
+	# Build OR conditions for each (subject, number) pair
+	conditions = []
+	for subject, number in course_codes:
+		subj_upper = str(subject).upper().strip()
+		try:
+			num_int = int(number)
+			conditions.append(
+				(Model.subject == subj_upper) & (Model.number == num_int)  # type: ignore
+			)
+		except (ValueError, TypeError):
+			# Skip invalid course codes
+			continue
+	
+	if not conditions:
+		return []
+	
+	# Combine all conditions with OR
+	filter_condition = or_(*conditions)
+	
+	q = session.query(Model).filter(filter_condition)  # type: ignore[arg-type]
+	return list(q)
+
+
 def return_text_stream(session: Session, bucketLevel: int = None, subject: str = None, credits: int = None, n: int = 1000, offset: int = 0):
 	Model = _course_model_from_session(session)
 	# Start a base query and apply filters incrementally so we don't need
@@ -103,6 +142,7 @@ __all__ = [
 	"get_course_by_code",
 	"search_courses_by_title",
 	"random_courses",
+	"get_courses_by_codes",
 	"return_text_stream"
 ]
 
@@ -138,11 +178,25 @@ def random_courses_safe(n: int = 3):
 		rows = random_courses(session, n)
 		return [(_detach_row(r) if r is not None else None) for r in rows]
 
-# all declares the module’s public API for star-imports.
+
+def get_courses_by_codes_safe(course_codes: List[Tuple[str, int]]):
+	"""
+	Wrapper around get_courses_by_codes using get_session() for session management.
+	
+	Usage:
+		codes = [("CS", 2500), ("CS", 3000)]
+		courses = get_courses_by_codes_safe(codes)
+	"""
+	with get_session() as session:
+		rows = get_courses_by_codes(session, course_codes)
+		return [(_detach_row(r) if r is not None else None) for r in rows]
+
+# all declares the module's public API for star-imports.
 __all__ += [
 	"get_course_by_code_safe",
 	"search_courses_by_title_safe",
 	"random_courses_safe",
+	"get_courses_by_codes_safe",
 ]
 
 

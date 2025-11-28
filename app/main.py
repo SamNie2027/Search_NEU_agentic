@@ -26,7 +26,8 @@ import types
 
 app = FastAPI()
 
-templates = Jinja2Templates(directory="templates")
+# Templates directory is at project root, not in app/
+templates = Jinja2Templates(directory=str(repo_root / "templates"))
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
@@ -39,7 +40,8 @@ async def chat(
     message: str = Form(...),
     prefix: str = Form(""),
     bucket: str = Form("None"),
-    credits: str = Form("")
+    credits: str = Form(""),
+    major_requirement: str = Form("")
 ): 
     keyword = message.lower().strip()
     
@@ -66,6 +68,9 @@ async def chat(
     
     if credits_int is not None:
         search_kwargs["credits"] = credits_int
+    
+    if major_requirement:  # Only add if not empty string
+        search_kwargs["major_requirement"] = major_requirement.strip()
     
     # Search for courses with filters
     result = tfidf.tool_search(**search_kwargs)

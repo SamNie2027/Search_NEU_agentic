@@ -1,0 +1,384 @@
+{
+    "CS": [
+        {
+            "subject": "AFCS",
+            "number": 2600
+        },
+        {
+            "subject": "BIOL",
+            "number": 1111
+        },
+        {
+            "subject": "BIOL",
+            "number": 1112
+        },
+        {
+            "subject": "BIOL",
+            "number": 1113
+        },
+        {
+            "subject": "BIOL",
+            "number": 1114
+        },
+        {
+            "subject": "BIOL",
+            "number": 2301
+        },
+        {
+            "subject": "BIOL",
+            "number": 2302
+        },
+        {
+            "subject": "CHEM",
+            "number": 1161
+        },
+        {
+            "subject": "CHEM",
+            "number": 1162
+        },
+        {
+            "subject": "CHEM",
+            "number": 1211
+        },
+        {
+            "subject": "CHEM",
+            "number": 1212
+        },
+        {
+            "subject": "CHEM",
+            "number": 1213
+        },
+        {
+            "subject": "CHEM",
+            "number": 1214
+        },
+        {
+            "subject": "CHEM",
+            "number": 1215
+        },
+        {
+            "subject": "CHEM",
+            "number": 1216
+        },
+        {
+            "subject": "COMM",
+            "number": 1112
+        },
+        {
+            "subject": "COMM",
+            "number": 1113
+        },
+        {
+            "subject": "COMM",
+            "number": 1210
+        },
+        {
+            "subject": "COMM",
+            "number": 1511
+        },
+        {
+            "subject": "CS",
+            "number": 1200
+        },
+        {
+            "subject": "CS",
+            "number": 1210
+        },
+        {
+            "subject": "CS",
+            "number": 1800
+        },
+        {
+            "subject": "CS",
+            "number": 1802
+        },
+        {
+            "subject": "CS",
+            "number": 2000
+        },
+        {
+            "subject": "CS",
+            "number": 2001
+        },
+        {
+            "subject": "CS",
+            "number": 2100
+        },
+        {
+            "subject": "CS",
+            "number": 2101
+        },
+        {
+            "subject": "CS",
+            "number": 3000
+        },
+        {
+            "subject": "CS",
+            "number": 3100
+        },
+        {
+            "subject": "CS",
+            "number": 3101
+        },
+        {
+            "subject": "CS",
+            "number": 3650
+        },
+        {
+            "subject": "CS",
+            "number": 3800
+        },
+        {
+            "subject": "CS",
+            "number": 4530
+        },
+        {
+            "subject": "CS",
+            "number": 4535
+        },
+        {
+            "subject": "CS",
+            "number": 5010
+        },
+        {
+            "subject": "CY",
+            "number": 2550
+        },
+        {
+            "subject": "CY",
+            "number": 3740
+        },
+        {
+            "subject": "CY",
+            "number": 4170
+        },
+        {
+            "subject": "CY",
+            "number": 4740
+        },
+        {
+            "subject": "CY",
+            "number": 4930
+        },
+        {
+            "subject": "CY",
+            "number": 5240
+        },
+        {
+            "subject": "DS",
+            "number": 1300
+        },
+        {
+            "subject": "DS",
+            "number": 3000
+        },
+        {
+            "subject": "DS",
+            "number": 4900
+        },
+        {
+            "subject": "EECE",
+            "number": 2310
+        },
+        {
+            "subject": "EECE",
+            "number": 2311
+        },
+        {
+            "subject": "ENGW",
+            "number": 1111
+        },
+        {
+            "subject": "ENGW",
+            "number": 3302
+        },
+        {
+            "subject": "ENGW",
+            "number": 3315
+        },
+        {
+            "subject": "ENVR",
+            "number": 1200
+        },
+        {
+            "subject": "ENVR",
+            "number": 1201
+        },
+        {
+            "subject": "ENVR",
+            "number": 2310
+        },
+        {
+            "subject": "ENVR",
+            "number": 2311
+        },
+        {
+            "subject": "ENVR",
+            "number": 2340
+        },
+        {
+            "subject": "ENVR",
+            "number": 2341
+        },
+        {
+            "subject": "ENVR",
+            "number": 3300
+        },
+        {
+            "subject": "ENVR",
+            "number": 3301
+        },
+        {
+            "subject": "ENVR",
+            "number": 4500
+        },
+        {
+            "subject": "ENVR",
+            "number": 4501
+        },
+        {
+            "subject": "HIST",
+            "number": 2220
+        },
+        {
+            "subject": "INSH",
+            "number": 2102
+        },
+        {
+            "subject": "JRNL",
+            "number": 3700
+        },
+        {
+            "subject": "MATH",
+            "number": 1341
+        },
+        {
+            "subject": "MATH",
+            "number": 1342
+        },
+        {
+            "subject": "MATH",
+            "number": 1365
+        },
+        {
+            "subject": "MATH",
+            "number": 1465
+        },
+        {
+            "subject": "MATH",
+            "number": 2280
+        },
+        {
+            "subject": "MATH",
+            "number": 2331
+        },
+        {
+            "subject": "MATH",
+            "number": 3081
+        },
+        {
+            "subject": "MKTG",
+            "number": 4606
+        },
+        {
+            "subject": "PHIL",
+            "number": 1145
+        },
+        {
+            "subject": "PHIL",
+            "number": 1300
+        },
+        {
+            "subject": "PHYS",
+            "number": 1145
+        },
+        {
+            "subject": "PHYS",
+            "number": 1146
+        },
+        {
+            "subject": "PHYS",
+            "number": 1147
+        },
+        {
+            "subject": "PHYS",
+            "number": 1148
+        },
+        {
+            "subject": "PHYS",
+            "number": 1151
+        },
+        {
+            "subject": "PHYS",
+            "number": 1152
+        },
+        {
+            "subject": "PHYS",
+            "number": 1153
+        },
+        {
+            "subject": "PHYS",
+            "number": 1155
+        },
+        {
+            "subject": "PHYS",
+            "number": 1156
+        },
+        {
+            "subject": "PHYS",
+            "number": 1157
+        },
+        {
+            "subject": "PHYS",
+            "number": 1161
+        },
+        {
+            "subject": "PHYS",
+            "number": 1162
+        },
+        {
+            "subject": "PHYS",
+            "number": 1163
+        },
+        {
+            "subject": "PHYS",
+            "number": 1165
+        },
+        {
+            "subject": "PHYS",
+            "number": 1166
+        },
+        {
+            "subject": "PHYS",
+            "number": 1167
+        },
+        {
+            "subject": "SOCL",
+            "number": 1280
+        },
+        {
+            "subject": "SOCL",
+            "number": 2485
+        },
+        {
+            "subject": "SOCL",
+            "number": 4528
+        },
+        {
+            "subject": "THTR",
+            "number": 1125
+        },
+        {
+            "subject": "THTR",
+            "number": 1130
+        },
+        {
+            "subject": "THTR",
+            "number": 1180
+        },
+        {
+            "subject": "THTR",
+            "number": 2345
+        }
+    ]
+}

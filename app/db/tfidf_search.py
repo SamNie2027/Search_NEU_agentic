@@ -20,11 +20,79 @@ import json, math, re, textwrap, random, os, sys
 import math
 from collections import Counter, defaultdict
 from .engine import get_session
-from .queries import return_text_stream
+from .queries import return_text_stream, get_courses_by_codes_safe, format_course_recipe
 import numpy as np
 
+# Import major requirements module
+try:
+    from major_requirements import get_requirement_codes
+    REQUIREMENTS_AVAILABLE = True
+except ImportError:
+    REQUIREMENTS_AVAILABLE = False
+
 # Get initial data
-def get_corpus(bucketLevel: int = None, subject: str = None, credits: int = None):
+def get_corpus(bucketLevel: int = None, subject: str = None, credits: int = None, major_requirement: str = None):
+    """
+    Get corpus of course text recipes, optionally filtered by major requirements.
+    
+    If major_requirement is specified, only courses matching requirement codes are included.
+    Otherwise, uses standard filters (bucketLevel, subject, credits).
+    """
+    # If major requirement is specified, filter by requirement codes first
+    if major_requirement and REQUIREMENTS_AVAILABLE:
+        try:
+            # Get course codes for the major
+            course_codes = get_requirement_codes(major_requirement)
+            
+            if not course_codes:
+                # No requirements found, return empty corpus
+                return []
+            
+            # Get courses matching requirement codes
+            courses = get_courses_by_codes_safe(course_codes)
+            
+            if not courses:
+                # No courses found, return empty corpus
+                return []
+            
+            # Apply additional filters if specified (subject, credits, bucketLevel)
+            filtered_courses = []
+            for course in courses:
+                # Filter by subject if specified
+                if subject is not None:
+                    course_subj = getattr(course, 'subject', None)
+                    if course_subj is None or str(course_subj).upper() != subject.upper():
+                        continue
+                
+                # Filter by credits if specified
+                if credits is not None:
+                    course_credits = getattr(course, 'min_credits', None)
+                    if course_credits is None or course_credits < credits:
+                        continue
+                
+                # Filter by bucketLevel if specified
+                if bucketLevel is not None:
+                    course_num = getattr(course, 'number', None)
+                    if course_num is None:
+                        continue
+                    start = int(bucketLevel)
+                    end = start + 1000
+                    if not (start <= course_num < end):
+                        continue
+                
+                # Format course as text recipe
+                recipe = format_course_recipe(course)
+                if recipe:
+                    filtered_courses.append(recipe)
+            
+            return filtered_courses
+            
+        except Exception as e:
+            # If requirement filtering fails, fall back to standard filtering
+            # In production, you might want to log this error
+            pass
+    
+    # Standard filtering path (no major requirement or fallback)
     with get_session() as session:
         # Collect recipe strings in chunks. `return_text_stream` yields strings;
         # convert each chunk to a list and extend the master list so `sentences`
@@ -110,21 +178,18 @@ def cosine(a: Dict[str, float], b: Dict[str, float]) -> float:
     if not a or not b:
         return 0.0
 
-    # ===== TODO =====
     # Compute the cosine similarity between two tf-idf vectors
-    # Notice that they are two dictionaries and could have missing keys
+    # Note: dictionaries may have missing keys, so we only consider common words
     common_words = filter(lambda x: x in b, a.keys())
-    # compute dot product
+    # Compute dot product
     dot_prod = sum(a[word] * b[word] for word in common_words)
-
     
-    # compute norms
+    # Compute norms
     a_norm = np.linalg.norm(np.array(list(a.values())), ord=2)
     b_norm = np.linalg.norm(np.array(list(b.values())), ord=2)
     if a_norm == 0.0 or b_norm == 0.0:
         return 0.0
-    similarity = dot_prod/(a_norm * b_norm)
-    # ===== TODO =====
+    similarity = dot_prod / (a_norm * b_norm)
     return similarity
 
 # 6.   We implement a search method based on the cosine similarity, which finds the documents with the highest similarity scores as the top-k search results.
@@ -152,8 +217,30 @@ def search_corpus(query: str, DOC_VECS, CORPUS, IDF, k: int = 3) -> List[Dict[st
     return results
 
 #       Integrate the search method as a tool
-def tool_search(query: str, bucketLevel: int = None, subject: str = None, credits: int = None, k: int = 3) -> Dict[str, Any]:
-    CORPUS = get_corpus(bucketLevel, subject, credits)
+def tool_search(query: str, bucketLevel: int = None, subject: str = None, credits: int = None, major_requirement: str = None, k: int = 3) -> Dict[str, Any]:
+    """
+    Search for courses using TF-IDF with optional filters.
+    
+    Args:
+        query: Search query string
+        bucketLevel: Course level bucket (1000, 2000, 4000, etc.)
+        subject: Department code filter (e.g., "CS")
+        credits: Minimum credits filter
+        major_requirement: Major name to filter by requirement courses (e.g., "CS")
+        k: Number of results to return
+        
+    Returns:
+        Dictionary with search results in tool format
+    """
+    CORPUS = get_corpus(bucketLevel, subject, credits, major_requirement)
+    
+    # If corpus is empty, return empty results
+    if not CORPUS:
+        return {
+            "tool": "search",
+            "query": query,
+            "results": [],
+        }
 
     DOC_TOKENS, VOCAB = doc_tokens_vocab(CORPUS)
     IDF = compute_idf(DOC_TOKENS, VOCAB)
@@ -173,7 +260,7 @@ def tool_search(query: str, bucketLevel: int = None, subject: str = None, credit
 
 TOOLS = {
     "search": {
-        "schema": {"query": "str", "k": "int? (default=3)"},
+        "schema": {"query": "str", "k": "int? (default=3)", "major_requirement": "str? (optional, e.g., 'CS')"},
         "fn": tool_search
     },
     "finish": {
