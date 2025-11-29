@@ -17,11 +17,12 @@
             <div class="inputContainer">
                 <label> Search Style: </label>
                 <select id="model-type">
-                    <option value="tfidf">TF-IDF</option>
-                    <option value="embeddings">Embeddings Search</option>
-                    <option value="agent">Agent</option>
+                    <option value="tfidf">Keyword Search</option>
+                    <option value="embeddings">Semantic Search</option>
+                    <option value="agent">Agent Search</option>
                 </select>
             </div>
+            <div id="filters-container">
             <h3>Optional Filters:</h3>
             <!-- Input area -->
             <div class="inputContainer">
@@ -59,6 +60,7 @@
                     <option value="">All Courses</option>
                     <option value="CS">CS Major Requirements</option>
                 </select>
+            </div>
             </div>
         </div>
         <h3>Make your query here:</h3>
@@ -102,6 +104,22 @@
         const bucketFilter = document.querySelector('#bucket-filter');
         const creditsFilter = document.querySelector('.credits-filter');
         const majorRequirementFilter = document.querySelector('#major-requirement-filter');
+
+        // Hide filters for embedding-based or agent searches
+        function updateFiltersVisibility() {
+            const filters = document.getElementById('filters-container');
+            if (!filters) return;
+            const val = modelInput.value;
+            if (val === 'embeddings' || val === 'agent') {
+                filters.style.display = 'none';
+            } else {
+                filters.style.display = 'block';
+            }
+        }
+
+        modelInput.addEventListener('change', updateFiltersVisibility);
+        // initial state
+        updateFiltersVisibility();
 
         // Function to send message
         async function sendMessage() {
