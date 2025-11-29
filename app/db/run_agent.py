@@ -78,4 +78,5 @@ tools = {
     "semantic_search": {"fn": semantic_search},
 }
 
-print(run_agent_with_real_llm("..."), False)
+# Call the agent without filters for this quick demo.
+print(run_agent_with_real_llm("CS 5100", useFilters=False))
