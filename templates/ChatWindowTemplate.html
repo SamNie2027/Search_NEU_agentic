@@ -13,6 +13,15 @@
 
     <div class="input-container">
         <div>
+            <h3>Search Style:</h3>
+            <div class="inputContainer">
+                <label> Search Style: </label>
+                <select id="model-type">
+                    <option value="tfidf">TF-IDF</option>
+                    <option value="embeddings">Embeddings Search</option>
+                    <option value="agent">Agent</option>
+                </select>
+            </div>
             <h3>Optional Filters:</h3>
             <!-- Input area -->
             <div class="inputContainer">
@@ -88,6 +97,7 @@
         }
 
         // Get filter elements
+        const modelInput = document.querySelector('#model-type');
         const prefixInput = document.querySelector('.prefix-input');
         const bucketFilter = document.querySelector('#bucket-filter');
         const creditsFilter = document.querySelector('.credits-filter');
@@ -96,6 +106,7 @@
         // Function to send message
         async function sendMessage() {
             const message = messageInput.value.trim();
+            const dropdown = document.getElementById("myDropdown");
 
             if (!message) return;
 
@@ -108,6 +119,7 @@
             sendButton.textContent = 'Sending...';
 
             try {
+                const modelType = modelInput.value;
                 const prefix = prefixInput.value.trim();
                 const bucket = bucketFilter.value;
                 const credits = creditsFilter.value.trim();
@@ -119,7 +131,7 @@
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                     },
-                    body: `message=${encodeURIComponent(message)}&prefix=${encodeURIComponent(prefix)}&bucket=${encodeURIComponent(bucket)}&credits=${encodeURIComponent(credits)}&major_requirement=${encodeURIComponent(majorRequirement)}`
+                    body: `message=${encodeURIComponent(message)}&prefix=${encodeURIComponent(prefix)}&bucket=${encodeURIComponent(bucket)}&credits=${encodeURIComponent(credits)}&major_requirement=${encodeURIComponent(majorRequirement)}&modelType=${encodeURIComponent(modelType)}`
                 });
 
                 const data = await response.json();
