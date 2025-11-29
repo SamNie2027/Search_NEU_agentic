@@ -55,7 +55,7 @@ def semantic_search(query: str, k: int = 3):
     results = [{"id": h.get("id"), "title": h.get("title"), "snippet": h.get("text"), "score": h.get("score")} for h in hits]
     return {"query": query, "results": results}
 
-def run_agent_with_real_llm(question: str, max_steps: int = 6):
+def run_agent_with_real_llm(question: str, max_steps: int = 6, useFilters: bool = True):
     """
     Build an agent wired to the repository's real LLM (`language_model.LLM`) and run it.
     Returns the agent run result dict. This accepts a `question` prompt string.
@@ -71,11 +71,11 @@ def run_agent_with_real_llm(question: str, max_steps: int = 6):
         config=AgentConfig(max_steps=max_steps, stop_after_first_tool=True)
     )
 
-    return agent.run(question, useFilters=False)
+    return agent.run(question, useFilters)
 
 tools = {
     "keyword_search": {"fn": keyword_search},
     "semantic_search": {"fn": semantic_search},
 }
 
-print(run_agent_with_real_llm("Presents a comparative approach to object-oriented programming and design. Discusses the concepts of object, class, metaclass, message, method, inheritance, and genericity. Reviews forms of polymorphism in object-oriented languages. Contrasts the use of inheritance and composition as dual techniques for software reuse—forwarding vs. delegation and subclassing vs. subtyping. Offers students an opportunity to obtain a deeper understanding of the principles of object-oriented programming and design, including software components."))
+print(run_agent_with_real_llm("..."), False)
