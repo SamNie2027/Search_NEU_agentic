@@ -332,9 +332,8 @@ bucket_levels = {
 }
 
 
-# 3. We will build the prompt shown to the model for the next step
-SYSTEM_PREAMBLE = f"""
-    You are a helpful ReAct agent. You may use tools to answer factual questions.
+SYSTEM_PREAMBLE_WITH_FILTERS = f"""
+    You are a helpful ReAct agent. You may use tools to find relevant courses for the user.
 
     Note: The College of Professioanl Studies, aka CPS program is separate from Undergraduate/ Graduate courses so avoid recommending unless the query or context includes CPS.
     
@@ -361,16 +360,12 @@ SYSTEM_PREAMBLE = f"""
 
     Examples (produce EXACTLY two lines in these formats):
     Example 1 (keyword search):
-    Thought: I should search for the course by code (CS 5100) to find the description.
-    Action: keyword_search[query="CS 5100", subjectCode="CS", bucketLevel="5000" k=3]
+    Thought: I should search for the course by keyword to find the description
+    Action: keyword_search[query="Object Oriented Programming", subjectCode="CS", bucketLevel="3000" k=3]
 
     Example 2 (semantic search):
     Thought: The user's question is conversational; use semantic search for context.
-    Action: semantic_search[query="What is CS 5100 about and how many credits is it?", k=3]
-
-    Example 3 (finish):
-    Thought: I have enough information from the tools to answer concisely.
-    Action: finish[answer="CS 5100 is an introductory AI course worth 3 credits."]
+    Action: semantic_search[query="I'm looking to learn about Programming Patterns and Object Oriented Programming", k=3]
 
     IMPORTANT: Only output exactly two lines for every response. Do NOT include extra commentary, numbered lists, or additional text. Follow the formats above strictly.
 
@@ -383,7 +378,31 @@ SYSTEM_PREAMBLE = f"""
             or finish[answer="<final answer>"]
 """.strip()
 
-def make_prompt(user_query: str, trajectory: List[Dict[str, str]]) -> str:
+SYSTEM_PREAMBLE_NO_FILTERS = f"""
+    You are a helpful ReAct agent. You may use tools to find relevant courses for the user.
+
+    Available tools:
+    - keyword_search[query="<text>"]
+    - semantic_search[query="<text>"]
+
+    Guidance on tool choice:
+    - Use `keyword_search` when the user supplies queries that search on all words as keywords without semantic meaning. Best to provide as many keywords as possible.
+    - Use `semantic_search` when the user query is a longer natural-language sentence, question, or contains conversational context. 
+    The agent may decide which tool to use based on the query; prefer semantic_search for verbose queries and keyword_search for concise ones.
+
+    IMPORTANT: Only output exactly two lines for every response. Do NOT include extra commentary, numbered lists, or additional text. Follow the formats above strictly.
+
+        To finish, use: finish[answer="<final answer>"]
+
+        Follow the exact step format (showing optional params explicitly):
+        Thought: <your reasoning>
+        Action: keyword_search[query="<text>", k=3]
+            or semantic_search[query="<text>", k=3]
+            or finish[answer="<final answer>"]
+""".strip()
+
+
+def make_prompt(user_query: str, trajectory: List[Dict[str, str]], useFilters: bool = True) -> str:
     """
     Construct the model prompt by concatenating:
       (1) a clear system preamble with the tool contract,
@@ -392,10 +411,19 @@ def make_prompt(user_query: str, trajectory: List[Dict[str, str]]) -> str:
       (4) a cue to produce the next Thought.
     """
     history_block = format_history(trajectory)
-    return (
-        f"{SYSTEM_PREAMBLE}\n\n"
-        f"User Question: {user_query}\n\n"
-        f"{history_block}\n"
-        f"Next step:\n"
-        f"Thought:"
-    )
+    if useFilters:
+        return (
+            f"{SYSTEM_PREAMBLE_WITH_FILTERS}\n\n"
+            f"User Question: {user_query}\n\n"
+            f"{history_block}\n"
+            f"Next step:\n"
+            f"Thought:"
+        )
+    else:
+        return (
+            f"{SYSTEM_PREAMBLE_NO_FILTERS}\n\n"
+            f"User Question: {user_query}\n\n"
+            f"{history_block}\n"
+            f"Next step:\n"
+            f"Thought:"
+        )

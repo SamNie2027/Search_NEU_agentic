@@ -47,14 +47,14 @@ class ReActAgent:
         # Track recent identical actions to avoid infinite repeating loops
         self._recent_action_counts: Dict[str, int] = {}
 
-    def run(self, user_query: str) -> Dict[str, Any]:
+    def run(self, user_query: str, useFilters: bool = True) -> Dict[str, Any]:
         self.trajectory.clear()
         self._recent_action_counts.clear()
         final_answer_from_tool = None
         for step_idx in range(self.config.max_steps):
             # 1. At each step, format the prompt based on the make_prompt function and self.trajectory
             # `make_prompt` expects the trajectory as a list of dicts with keys: thought, action, observation
-            prompt = make_prompt(user_query, [asdict(s) for s in self.trajectory])
+            prompt = make_prompt(user_query, [asdict(s) for s in self.trajectory], useFilters)
 
             # 2. Use self.llm to process the prompt
             try:
@@ -63,10 +63,10 @@ class ReActAgent:
                 out = f"Thought: (llm error)\nAction: finish[answer=\"LLM error: {e}\"]"
 
             # UNCOMMENT FOR LOGGING
-            # # If verbose, print the raw LLM output immediately (intermediate output)
-            # if self.config.verbose:
-            #     print(f"\n--- Intermediate output (step {step_idx+1}) ---")
-            #     print(out)
+            # If verbose, print the raw LLM output immediately (intermediate output)
+            if self.config.verbose:
+                print(f"\n--- Intermediate output (step {step_idx+1}) ---")
+                print(out)
 
             # Expect two lines: Thought:..., Action:...
             t_match = re.search(r"Thought:\s*(.*)", out)
@@ -87,30 +87,6 @@ class ReActAgent:
                 self.trajectory.append(Step(thought, action_line, observation, out))
                 break
             name, args = parsed
-
-            # If the model emitted a placeholder query (used as a formatting fallback),
-            # replace it with the real user_query so the agent executes a meaningful search.
-            if isinstance(args, dict):
-                q = args.get("query") if "query" in args else None
-                if isinstance(q, str) and q.strip().lower().startswith("(auto)"):
-                    args["query"] = user_query
-
-
-            # Detect repeated identical actions (same tool name and args) and stop
-            # after a small number of repetitions to avoid infinite loops when
-            # the model keeps producing the same action without progress.
-            try:
-                action_key = name + ":" + json.dumps(args, sort_keys=True)
-            except Exception:
-                action_key = name
-            self._recent_action_counts[action_key] = self._recent_action_counts.get(action_key, 0) + 1
-            if self._recent_action_counts[action_key] >= 3:
-                # Append a finish step so the agent ends gracefully with a clear message.
-                finish_action = 'Action: finish[answer="Stopped after repeated action: %s"]' % (name,)
-                observation = f"Repeated action '{name}' executed {self._recent_action_counts[action_key]} times. Halting to avoid loop."
-                self.trajectory.append(Step(thought, finish_action, observation, out))
-                break
-
 
             if name == "finish":
                 observation = "done"
@@ -138,45 +114,11 @@ class ReActAgent:
                 break
 
             # UNCOMMENT FOR LOGGING
-            # # If verbose, print the parsed thought/action and resulting observation now
-            # if self.config.verbose:
-            #     print(f"Thought: {thought}")
-            #     print(f"Action: {action_line}")
-            #     print(f"Observation: {observation}\n")
-
-            # If the tool returned a search payload, use it as the final answer and stop.
-            try:
-                obs_obj = json.loads(observation)
-            except Exception:
-                obs_obj = None
-            if isinstance(obs_obj, dict) and obs_obj.get("tool") == "search":
-                final_answer_from_tool = obs_obj
-                break
-        # Prefer returning the last search tool payload (if present) as the final answer
-        final_answer = None
-        for s in reversed(self.trajectory):
-            # Try to parse the observation as JSON and see if it's a search payload
-            try:
-                obs_obj = json.loads(s.observation)
-            except Exception:
-                obs_obj = None
-
-            if isinstance(obs_obj, dict) and obs_obj.get("tool") == "search" and "results" in obs_obj:
-                final_answer = obs_obj
-                break
-
-        # If no search payload found, fall back to extracting a finish[...] answer string
-        if final_answer is None:
-            for s in reversed(self.trajectory):
-                action_text = s.action
-                if action_text.lower().startswith("action:"):
-                    action_text = action_text[len("Action:"):].strip()
-                if action_text.startswith("finish["):
-                    m = re.search(r'answer="(.*)"', action_text)
-                    if m:
-                        final_answer = m.group(1)
-                        break
-                        
+            # If verbose, print the parsed thought/action and resulting observation now
+            if self.config.verbose:
+                print(f"Thought: {thought}")
+                print(f"Action: {action_line}")
+                print(f"Observation: {observation}\n")
         # Also expose the first observed search `results` (if any) at the
         # top-level return so callers can access it directly without a helper.
         results = None
@@ -190,3 +132,4 @@ class ReActAgent:
                 break
 
         return results
+    

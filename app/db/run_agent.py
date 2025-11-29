@@ -8,7 +8,7 @@ This uses a fake LLM (deterministic) and a simple `search` tool to show
 how the agent constructs prompts, calls the LLM, executes tools, and
 returns a final answer.
 """
-from agent_system import ReActAgent, AgentConfig
+from .agent_system import ReActAgent, AgentConfig
 import language_model as lm
 import json
 
@@ -16,9 +16,10 @@ import json
 # — the example will raise ImportError immediately if the project's search
 # implementations or embeddings are not available. This makes the script fail
 # loudly so you can fix environment/dependencies rather than silently fallback.
-from app.db import tfidf_search as tfidf_mod
-from app.db import load_embeddings as load_mod
-from app.db import embedding_search as emb_mod
+from . import tfidf_search as tfidf_mod
+from . import load_embeddings as load_mod
+from . import embedding_search as emb_mod
+llm = lm.LLM
 
 # A simple search tool that returns structured results.
 def keyword_search(query: str, k: int = 3, bucketLevel: int | None = None, subject: str | None = None):
@@ -54,37 +55,6 @@ def semantic_search(query: str, k: int = 3):
     results = [{"id": h.get("id"), "title": h.get("title"), "snippet": h.get("text"), "score": h.get("score")} for h in hits]
     return {"query": query, "results": results}
 
-
-def run_and_print(question: str, max_steps: int = 6):
-    """Run the agent for `question` and print the formatted result.
-
-    Returns the agent result dict.
-    """
-    tools = {
-        "keyword_search": {"fn": keyword_search},
-        "semantic_search": {"fn": semantic_search},
-    }
-    # Configure the agent to stop after the first tool call so the example
-    # performs exactly one search and returns.
-    agent = ReActAgent(llm=lm.LLM, tools=tools, config=AgentConfig(max_steps=max_steps, stop_after_first_tool=True))
-    result = agent.run(question)
-
-    print("\n--- AGENT RUN RESULT ---")
-    print(f"Question: {result['question']}")
-    fa = result['final_answer']
-    if isinstance(fa, dict):
-        print("Final answer (search payload):")
-        print(json.dumps(fa, ensure_ascii=False, indent=2))
-    else:
-        print(f"Final answer: {fa}")
-    print("Steps:")
-    for i, s in enumerate(result['steps'], 1):
-        print(f"Step {i} - Thought: {s['thought']}")
-        print(f"         Action: {s['action']}")
-        print(f"         Observation: {s['observation']}\n")
-
-
-
 def run_agent_with_real_llm(question: str, max_steps: int = 6):
     """
     Build an agent wired to the repository's real LLM (`language_model.LLM`) and run it.
@@ -101,18 +71,11 @@ def run_agent_with_real_llm(question: str, max_steps: int = 6):
         config=AgentConfig(max_steps=max_steps, stop_after_first_tool=True)
     )
 
-    return agent.run(question)
+    return agent.run(question, useFilters=False)
 
+tools = {
+    "keyword_search": {"fn": keyword_search},
+    "semantic_search": {"fn": semantic_search},
+}
 
-if __name__ == '__main__':
-    # Use the repository's real LLM implementation by default
-    llm = lm.LLM
-    tools = {
-        "keyword_search": {"fn": keyword_search},
-        "semantic_search": {"fn": semantic_search},
-    }
-    # Use the AgentConfig default allow_tools so both searches are permitted
-    
-    # Example run (keep for script usage)
-    question = "What challenging uperclassmen class can I learn Python in?"
-    print(run_agent_with_real_llm(question))
+print(run_agent_with_real_llm("Presents a comparative approach to object-oriented programming and design. Discusses the concepts of object, class, metaclass, message, method, inheritance, and genericity. Reviews forms of polymorphism in object-oriented languages. Contrasts the use of inheritance and composition as dual techniques for software reuse—forwarding vs. delegation and subclassing vs. subtyping. Offers students an opportunity to obtain a deeper understanding of the principles of object-oriented programming and design, including software components."))

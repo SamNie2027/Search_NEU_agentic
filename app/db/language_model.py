@@ -70,14 +70,6 @@ def hf_llm(prompt: str) -> str:
     Completes from your existing ReAct prompt and returns exactly two lines:
     'Thought: ...' and 'Action: ...'
     """
-    # We add a strong instruction to the prompt to improve compliance with the format
-    format_guard = (
-        "\n\nIMPORTANT: Respond with EXACTLY two lines in this format:\n"
-        "Thought: <one concise sentence>\n"
-        "Action: <either keyword_search[query=\"<text>\", bucketLevel=<bucketLevel>, subject=\"<subject code>\"] or semantic_search[query=\"<text>\"] or finish[answer=\"...\"]>\n"
-        "Do NOT include Observation."
-    )
-    full_prompt = prompt + format_guard
 
     # Tokenize the prompt and move tensors to the model's device
     inputs = tokenizer(full_prompt, return_tensors="pt")
