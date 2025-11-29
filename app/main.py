@@ -17,6 +17,7 @@ if str(repo_root) not in sys.path:
     sys.path.insert(0, str(repo_root))
 
 from app.db.load_embeddings import load_embeddings
+from app.db.embedding_search import embedding_search 
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
@@ -41,10 +42,11 @@ async def chat(
     prefix: str = Form(""),
     bucket: str = Form("None"),
     credits: str = Form(""),
-    major_requirement: str = Form("")
+    major_requirement: str = Form(""),
+    modelType: str= Form("")
 ): 
     keyword = message.lower().strip()
-    
+    print(modelType)
     # Convert credits to int (handle empty string)
     try:
         credits_int = int(credits) if credits else None
@@ -73,17 +75,36 @@ async def chat(
         search_kwargs["major_requirement"] = major_requirement.strip()
     
     # Search for courses with filters
-    result = tfidf.tool_search(**search_kwargs)
+    try:
+        if modelType == "tfidf":
+            result = tfidf.tool_search(**search_kwargs)
+                # Extract the results list from the dictionary
+            if result and isinstance(result, dict) and 'results' in result:
+                classes = result['results']
+            elif result:
+                classes = result
+            else:
+                classes = []
+        elif modelType == "embeddings":
+            courses, embeddings = load_embeddings()
+            result = embedding_search(keyword, courses, embeddings)
     
-    # Extract the results list from the dictionary
-    if result and isinstance(result, dict) and 'results' in result:
-        classes = result['results']
-    elif result:
-        classes = result
-    else:
-        classes = []
+            if result:
+                classes = []
+                for item in result:
+                    new_item = item.copy() 
+                    new_item['snippet'] = new_item.pop('text') 
+                    classes.append(new_item)
+            else:
+                classes = []
+        elif modelType == "agent":
+            result=""
+    except Exception as e:  
+        return {"response": f'<div class="message-content"><p>Error: {str(e)}</p></div>'}
+    
+    print(result) 
 
-    print(classes)
+
     # Render template
     if classes:
         html_content = templates.get_template("ClassListTemplate.html").render({"classes": classes})
@@ -114,6 +135,6 @@ def read_item(subject: str,id: int):
 
 def my_object_encoder(obj):
     if isinstance(obj, types.SimpleNamespace):
-        return {"subject": obj.subject, "number": obj.number, "title":obj.title, "description":obj.description}
+        return {"subject": obj.subject, "number": obj.number, "title":obj.title, "snippet":obj.text}
     raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
     

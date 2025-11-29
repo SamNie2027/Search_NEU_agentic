@@ -13,6 +13,16 @@
 
     <div class="input-container">
         <div>
+            <h3>Search Style:</h3>
+            <div class="inputContainer">
+                <label> Search Style: </label>
+                <select id="model-type">
+                    <option value="tfidf">Keyword Search</option>
+                    <option value="embeddings">Semantic Search</option>
+                    <option value="agent">Agent Search</option>
+                </select>
+            </div>
+            <div id="filters-container">
             <h3>Optional Filters:</h3>
             <!-- Input area -->
             <div class="inputContainer">
@@ -51,6 +61,7 @@
                     <option value="CS">CS Major Requirements</option>
                 </select>
             </div>
+            </div>
         </div>
         <h3>Make your query here:</h3>
         <input type="text" class="message-input" placeholder="What sort of topic do you want to learn..."
@@ -88,14 +99,32 @@
         }
 
         // Get filter elements
+        const modelInput = document.querySelector('#model-type');
         const prefixInput = document.querySelector('.prefix-input');
         const bucketFilter = document.querySelector('#bucket-filter');
         const creditsFilter = document.querySelector('.credits-filter');
         const majorRequirementFilter = document.querySelector('#major-requirement-filter');
 
+        // Hide filters for embedding-based or agent searches
+        function updateFiltersVisibility() {
+            const filters = document.getElementById('filters-container');
+            if (!filters) return;
+            const val = modelInput.value;
+            if (val === 'embeddings' || val === 'agent') {
+                filters.style.display = 'none';
+            } else {
+                filters.style.display = 'block';
+            }
+        }
+
+        modelInput.addEventListener('change', updateFiltersVisibility);
+        // initial state
+        updateFiltersVisibility();
+
         // Function to send message
         async function sendMessage() {
             const message = messageInput.value.trim();
+            const dropdown = document.getElementById("myDropdown");
 
             if (!message) return;
 
@@ -108,6 +137,7 @@
             sendButton.textContent = 'Sending...';
 
             try {
+                const modelType = modelInput.value;
                 const prefix = prefixInput.value.trim();
                 const bucket = bucketFilter.value;
                 const credits = creditsFilter.value.trim();
@@ -119,7 +149,7 @@
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                     },
-                    body: `message=${encodeURIComponent(message)}&prefix=${encodeURIComponent(prefix)}&bucket=${encodeURIComponent(bucket)}&credits=${encodeURIComponent(credits)}&major_requirement=${encodeURIComponent(majorRequirement)}`
+                    body: `message=${encodeURIComponent(message)}&prefix=${encodeURIComponent(prefix)}&bucket=${encodeURIComponent(bucket)}&credits=${encodeURIComponent(credits)}&major_requirement=${encodeURIComponent(majorRequirement)}&modelType=${encodeURIComponent(modelType)}`
                 });
 
                 const data = await response.json();
