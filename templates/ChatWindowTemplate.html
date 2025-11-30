@@ -22,6 +22,11 @@
                     <option value="agent">Agent Search</option>
                 </select>
             </div>
+            <div class="switch" id="UseFilters">
+                <label> Use Filters (results are inconsistant)</label>
+                <input type="checkbox">
+                <span class="slider"></span>
+            </div>
             <div id="filters-container">
             <h3>Optional Filters:</h3>
             <!-- Input area -->
@@ -104,16 +109,25 @@
         const bucketFilter = document.querySelector('#bucket-filter');
         const creditsFilter = document.querySelector('.credits-filter');
         const majorRequirementFilter = document.querySelector('#major-requirement-filter');
+        const checkbox = document.querySelector('#UseFilters input[type="checkbox"]');
 
         // Hide filters for embedding-based or agent searches
         function updateFiltersVisibility() {
             const filters = document.getElementById('filters-container');
+            const checkboxToggle = document.getElementById('UseFilters');
             if (!filters) return;
             const val = modelInput.value;
-            if (val === 'embeddings' || val === 'agent') {
+            if (val === 'embeddings') {
                 filters.style.display = 'none';
-            } else {
+                checkboxToggle.style.display='none';
+            }
+            else if(val=== 'agent'){
+                filters.style.display = 'none';
+                checkboxToggle.style.display='block';
+            }
+            else {
                 filters.style.display = 'block';
+                checkboxToggle.style.display='none';
             }
         }
 
@@ -142,6 +156,8 @@
                 const bucket = bucketFilter.value;
                 const credits = creditsFilter.value.trim();
                 const majorRequirement = majorRequirementFilter.value.trim();
+                const isChecked = checkbox.checked ? 'true' : 'false';
+
 
                 // Send request to backend with all parameters
                 const response = await fetch('/api/chat', {
@@ -149,7 +165,7 @@
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                     },
-                    body: `message=${encodeURIComponent(message)}&prefix=${encodeURIComponent(prefix)}&bucket=${encodeURIComponent(bucket)}&credits=${encodeURIComponent(credits)}&major_requirement=${encodeURIComponent(majorRequirement)}&modelType=${encodeURIComponent(modelType)}`
+                    body: `message=${encodeURIComponent(message)}&prefix=${encodeURIComponent(prefix)}&bucket=${encodeURIComponent(bucket)}&credits=${encodeURIComponent(credits)}&major_requirement=${encodeURIComponent(majorRequirement)}&modelType=${encodeURIComponent(modelType)}&isChecked=${encodeURIComponent(isChecked)}`
                 });
 
                 const data = await response.json();
