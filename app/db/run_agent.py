@@ -77,6 +77,3 @@ tools = {
     "keyword_search": {"fn": keyword_search},
     "semantic_search": {"fn": semantic_search},
 }
-
-# Call the agent without filters for this quick demo.
-print(run_agent_with_real_llm("CS 5100", useFilters=False))

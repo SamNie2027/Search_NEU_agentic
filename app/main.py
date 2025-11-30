@@ -7,6 +7,7 @@ import os
 from fastapi import FastAPI, Request, Form
 from db import queries as queries
 from db import tfidf_search as tfidf
+from db import run_agent
 import numpy as np
 
 # Ensure repository root is on sys.path so top-level packages (e.g. `scripts`)
@@ -43,10 +44,12 @@ async def chat(
     bucket: str = Form("None"),
     credits: str = Form(""),
     major_requirement: str = Form(""),
-    modelType: str= Form("")
+    modelType: str = Form(""),
+    isChecked: str = Form("false")
 ): 
     keyword = message.lower().strip()
-    print(modelType)
+    use_filters = isChecked == "true"
+    
     # Convert credits to int (handle empty string)
     try:
         credits_int = int(credits) if credits else None
@@ -98,13 +101,21 @@ async def chat(
             else:
                 classes = []
         elif modelType == "agent":
-            result=""
+            result=run_agent.run_agent_with_real_llm(keyword,6, use_filters)
+            print(result)
+            if result and isinstance(result, dict) and 'results' in result:
+                classes = result['results']
+            elif result:
+                classes = result
+            else:
+                classes = []
+                 
     except Exception as e:  
         return {"response": f'<div class="message-content"><p>Error: {str(e)}</p></div>'}
     
     print(result) 
 
-
+     
     # Render template
     if classes:
         html_content = templates.get_template("ClassListTemplate.html").render({"classes": classes})
