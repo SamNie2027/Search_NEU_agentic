@@ -156,7 +156,16 @@
                 const bucket = bucketFilter.value;
                 const credits = creditsFilter.value.trim();
                 const majorRequirement = majorRequirementFilter.value.trim();
-                const isChecked = checkbox.checked ? 'true' : 'false';
+                // Determine whether filters are active. Send as '1' or '0' so backend
+                // doesn't interpret the literal string 'false' as truthy.
+                const filtersContainer = document.getElementById('filters-container');
+                let useFilters = '0';
+                if (filtersContainer && filtersContainer.style.display === 'none') {
+                    // Filters hidden by UI -> treat as disabled
+                    useFilters = '0';
+                } else {
+                    useFilters = (checkbox && checkbox.checked) ? '1' : '0';
+                }
 
 
                 // Send request to backend with all parameters
@@ -165,7 +174,7 @@
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                     },
-                    body: `message=${encodeURIComponent(message)}&prefix=${encodeURIComponent(prefix)}&bucket=${encodeURIComponent(bucket)}&credits=${encodeURIComponent(credits)}&major_requirement=${encodeURIComponent(majorRequirement)}&modelType=${encodeURIComponent(modelType)}&isChecked=${encodeURIComponent(isChecked)}`
+                    body: `message=${encodeURIComponent(message)}&prefix=${encodeURIComponent(prefix)}&bucket=${encodeURIComponent(bucket)}&credits=${encodeURIComponent(credits)}&major_requirement=${encodeURIComponent(majorRequirement)}&modelType=${encodeURIComponent(modelType)}&useFilters=${encodeURIComponent(useFilters)}`
                 });
 
                 const data = await response.json();

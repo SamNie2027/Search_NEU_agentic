@@ -45,10 +45,17 @@ async def chat(
     credits: str = Form(""),
     major_requirement: str = Form(""),
     modelType: str = Form(""),
-    isChecked: str = Form("false")
-): 
+    isChecked: str = Form("false"),
+    useFilters: str = Form("0"),
+):
+    """
+    Note: older UI used `isChecked` with literal 'true'/'false'. Newer frontend sends
+    `useFilters` as '1' or '0'. Accept both for backward compatibility.
+    """
     keyword = message.lower().strip()
-    use_filters = isChecked == "true"
+    # Prefer the explicit numeric `useFilters` ('1' => enabled). Fall back to the
+    # legacy `isChecked == 'true'` value for older clients.
+    use_filters = (useFilters == "1") or (isChecked == "true")
     
     # Convert credits to int (handle empty string)
     try:
@@ -101,7 +108,8 @@ async def chat(
             else:
                 classes = []
         elif modelType == "agent":
-            result=run_agent.run_agent_with_real_llm(keyword,6, use_filters)
+            print(use_filters)
+            result=run_agent.run_agent_with_real_llm(keyword,6, useFilters=use_filters)
             print(result)
             if result and isinstance(result, dict) and 'results' in result:
                 classes = result['results']

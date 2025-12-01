@@ -54,7 +54,7 @@ class ReActAgent:
         for step_idx in range(self.config.max_steps):
             # 1. At each step, format the prompt based on the make_prompt function and self.trajectory
             # `make_prompt` expects the trajectory as a list of dicts with keys: thought, action, observation
-            prompt = make_prompt(user_query, [asdict(s) for s in self.trajectory], useFilters)
+            prompt = make_prompt(user_query, [asdict(s) for s in self.trajectory], useFilters=useFilters)
 
             # 2. Use self.llm to process the prompt
             try:
