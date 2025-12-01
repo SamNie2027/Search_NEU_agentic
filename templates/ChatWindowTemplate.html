@@ -110,10 +110,6 @@
         <div id="chat-messages" class="p-4">
             <!-- Incoming changes / messages area -->
             <div id="incoming-controls" class="mb-4 flex items-center space-x-3">
-                <div id="UseFilters" class="flex items-center space-x-2 p-2 bg-gray-50 rounded shadow">
-                    <input id="useFiltersCheckbox" type="checkbox" class="h-5 w-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500">
-                    <label for="useFiltersCheckbox" class="text-sm font-medium text-gray-700">Use Filters <span class="text-xs text-gray-500">(results are inconsistent)</span></label>
-                </div>
             </div>
             <!-- Messages will be added here dynamically -->
             </div>
@@ -133,6 +129,11 @@
                 </select>
             </div>
             <!-- Optional Filters -->
+                            <div id="UseFilters" class="flex items-center space-x-3 p-3 bg-black text-white border border-red-600 rounded-lg">
+                                <input id="useFiltersCheckbox" type="checkbox" class="h-5 w-5 text-red-500 bg-gray-800 border-gray-600 rounded focus:ring-red-500">
+                                <label for="useFiltersCheckbox" class="text-sm font-medium">Allow agent to use filters <span class="text-xs text-red-300">(results are inconsistent)</span></label>
+                            </div>
+
             <div id="filters-container" class="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <h3 class="text-white font-semibold text-lg col-span-full mb-2">Optional Filters</h3>
 
