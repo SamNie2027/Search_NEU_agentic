@@ -1,12 +1,17 @@
 <div class="message-content">
-  <p class="message-text">Here are the classes I found:</p>
-  <div class="class-list">
+  <p class="message-text text-white font-semibold mb-4 text-lg">Here are the classes I found:</p>
+  <div class="class-list space-y-4">
     {% for class in classes %}
-    <div class="class-item">
-      <div class="class-header">
-        <span class="class-title">{{ class.title }}</span>
+    <div
+      class="class-item bg-gray-800 border border-gray-700 rounded-lg p-5 hover:border-red-600 hover:shadow-lg hover:shadow-red-600/20 transition-all duration-300 cursor-pointer transform hover:-translate-y-1">
+      <div class="class-header mb-3">
+        <span class="class-title text-red-500 font-bold text-xl hover:text-red-400 transition-colors">
+          {{ class.title }}
+        </span>
       </div>
-      <p class="class-description">{{ class.snippet }}</p>
+      <p class="class-description text-gray-300 leading-relaxed">
+        {{ class.snippet }}
+      </p>
     </div>
     {% endfor %}
   </div>
