@@ -158,13 +158,16 @@
                 const majorRequirement = majorRequirementFilter.value.trim();
                 // Determine whether filters are active. Send as '1' or '0' so backend
                 // doesn't interpret the literal string 'false' as truthy.
-                const filtersContainer = document.getElementById('filters-container');
+                // Determine whether filters toggle is visible to the user. If the
+                // `#UseFilters` control is visible, respect the checkbox state.
+                // If the control itself is hidden, treat filters as disabled.
+                const useFiltersToggle = document.getElementById('UseFilters');
                 let useFilters = '0';
-                if (filtersContainer && filtersContainer.style.display === 'none') {
-                    // Filters hidden by UI -> treat as disabled
-                    useFilters = '0';
-                } else {
+                if (useFiltersToggle && window.getComputedStyle(useFiltersToggle).display !== 'none') {
                     useFilters = (checkbox && checkbox.checked) ? '1' : '0';
+                } else {
+                    // Toggle not visible (or missing) -> filters disabled
+                    useFilters = '0';
                 }
 
 

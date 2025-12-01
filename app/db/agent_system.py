@@ -99,6 +99,18 @@ class ReActAgent:
                 break
 
             # 4. Execute the action
+            # If filters are disabled for this run, defensively remove any
+            # disallowed filter arguments that the LLM may have emitted so
+            # tools cannot receive or act on them.
+            if not useFilters:
+                disallowed_keys = {"bucketLevel", "subject", "subjectCode", "subject_code"}
+                present = disallowed_keys.intersection(args.keys())
+                if present:
+                    for k in present:
+                        args.pop(k, None)
+                    if self.config.verbose:
+                        print(f"[agent_system] Stripped disallowed filter args from action '{name}': {sorted(list(present))}")
+
             try:
                 obs_payload = self.tools[name]["fn"](**args)
                 observation = json.dumps(obs_payload, ensure_ascii=False)  # show structured obs

@@ -53,9 +53,20 @@ async def chat(
     `useFilters` as '1' or '0'. Accept both for backward compatibility.
     """
     keyword = message.lower().strip()
-    # Prefer the explicit numeric `useFilters` ('1' => enabled). Fall back to the
-    # legacy `isChecked == 'true'` value for older clients.
-    use_filters = (useFilters == "1") or (isChecked == "true")
+    # Prefer the explicit numeric `useFilters` ('1' => enabled). Fall back to
+    # legacy `isChecked` values sent by older clients. Accept a range of
+    # truthy string values (case-insensitive) to be more robust against
+    # frontend differences.
+    def _to_bool(val: str) -> bool:
+        if val is None:
+            return False
+        v = str(val).strip().lower()
+        return v in ("1", "true", "t", "yes", "y", "on")
+
+    use_filters = _to_bool(useFilters) or _to_bool(isChecked)
+
+    # Debug print: show raw incoming values and the computed boolean
+    print(f"useFilters raw: '{useFilters}'  isChecked raw: '{isChecked}'  -> use_filters: {use_filters}")
     
     # Convert credits to int (handle empty string)
     try:
@@ -108,7 +119,7 @@ async def chat(
             else:
                 classes = []
         elif modelType == "agent":
-            print(use_filters)
+            print("useFilters", use_filters)
             result=run_agent.run_agent_with_real_llm(keyword,6, useFilters=use_filters)
             print(result)
             if result and isinstance(result, dict) and 'results' in result:
