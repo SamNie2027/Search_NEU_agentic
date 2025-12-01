@@ -68,5 +68,5 @@ def embedding_search(query: str, courses: list, embeddings: list, k: int = 3):
 
     return results
 
-courses, embeddings = load_embeddings()
-print(embedding_search("...whatever query you want!...", courses, embeddings))
+# courses, embeddings = load_embeddings()
+# print(embedding_search("...whatever query you want!...", courses, embeddings))

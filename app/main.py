@@ -7,6 +7,7 @@ import os
 from fastapi import FastAPI, Request, Form
 from db import queries as queries
 from db import tfidf_search as tfidf
+from db import run_agent
 import numpy as np
 
 # Ensure repository root is on sys.path so top-level packages (e.g. `scripts`)
@@ -43,10 +44,30 @@ async def chat(
     bucket: str = Form("None"),
     credits: str = Form(""),
     major_requirement: str = Form(""),
-    modelType: str= Form("")
-): 
+    modelType: str = Form(""),
+    isChecked: str = Form("false"),
+    useFilters: str = Form("0"),
+):
+    """
+    Note: older UI used `isChecked` with literal 'true'/'false'. Newer frontend sends
+    `useFilters` as '1' or '0'. Accept both for backward compatibility.
+    """
     keyword = message.lower().strip()
-    print(modelType)
+    # Prefer the explicit numeric `useFilters` ('1' => enabled). Fall back to
+    # legacy `isChecked` values sent by older clients. Accept a range of
+    # truthy string values (case-insensitive) to be more robust against
+    # frontend differences.
+    def _to_bool(val: str) -> bool:
+        if val is None:
+            return False
+        v = str(val).strip().lower()
+        return v in ("1", "true", "t", "yes", "y", "on")
+
+    use_filters = _to_bool(useFilters) or _to_bool(isChecked)
+
+    # Debug print: show raw incoming values and the computed boolean
+    print(f"useFilters raw: '{useFilters}'  isChecked raw: '{isChecked}'  -> use_filters: {use_filters}")
+    
     # Convert credits to int (handle empty string)
     try:
         credits_int = int(credits) if credits else None
@@ -98,13 +119,22 @@ async def chat(
             else:
                 classes = []
         elif modelType == "agent":
-            result=""
+            print("useFilters", use_filters)
+            result=run_agent.run_agent_with_real_llm(keyword,6, useFilters=use_filters)
+            print(result)
+            if result and isinstance(result, dict) and 'results' in result:
+                classes = result['results']
+            elif result:
+                classes = result
+            else:
+                classes = []
+                 
     except Exception as e:  
         return {"response": f'<div class="message-content"><p>Error: {str(e)}</p></div>'}
     
     print(result) 
 
-
+     
     # Render template
     if classes:
         html_content = templates.get_template("ClassListTemplate.html").render({"classes": classes})

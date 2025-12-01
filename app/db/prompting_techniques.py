@@ -379,7 +379,7 @@ SYSTEM_PREAMBLE_WITH_FILTERS = f"""
 """.strip()
 
 SYSTEM_PREAMBLE_NO_FILTERS = f"""
-    You are a helpful ReAct agent. You may use tools to find relevant courses for the user.
+    You are a helpful ReAct agent. You may use tools to find relevant courses for the user. DO NOT use bucketLevel or subject filters.
 
     Available tools:
     - keyword_search[query="<text>"]
@@ -410,20 +410,44 @@ def make_prompt(user_query: str, trajectory: List[Dict[str, str]], useFilters: b
       (3) the formatted history so far,
       (4) a cue to produce the next Thought.
     """
-    history_block = format_history(trajectory)
+    # If filters are disabled, sanitize any previous Action lines so that
+    # bucketLevel/subject arguments are not present in the prompt history.
+    def _remove_filters_from_args(argstr: str) -> str:
+        # Remove bucketLevel and subject assignments (handle quoted or unquoted values)
+        argstr = re.sub(r"\s*,\s*bucketLevel\s*=\s*(?:\"[^\"]*\"|'[^']*'|[^,\]]+)", "", argstr)
+        argstr = re.sub(r"\s*,\s*subject\s*=\s*(?:\"[^\"]*\"|'[^']*'|[^,\]]+)", "", argstr)
+        # Trim leading/trailing commas and whitespace left behind
+        argstr = re.sub(r"^\s*,\s*", "", argstr)
+        argstr = re.sub(r"\s*,\s*$", "", argstr)
+        return argstr
+
     if useFilters:
-        return (
-            f"{SYSTEM_PREAMBLE_WITH_FILTERS}\n\n"
-            f"User Question: {user_query}\n\n"
-            f"{history_block}\n"
-            f"Next step:\n"
-            f"Thought:"
-        )
+        history_block = format_history(trajectory)
+        preamble = SYSTEM_PREAMBLE_WITH_FILTERS
     else:
-        return (
-            f"{SYSTEM_PREAMBLE_NO_FILTERS}\n\n"
-            f"User Question: {user_query}\n\n"
-            f"{history_block}\n"
-            f"Next step:\n"
-            f"Thought:"
-        )
+        # Build a sanitized trajectory where any bucket/subject args are stripped
+        sanitized: List[Dict[str, str]] = []
+        for step in trajectory:
+            action = step.get("action", "")
+            # Try to parse Action: name[...] and strip disallowed args
+            m = re.match(r"Action:\s*([a-z_]+)\[(.*)\]$", action)
+            if m:
+                name = m.group(1)
+                args = m.group(2)
+                cleaned = _remove_filters_from_args(args)
+                # Keep empty brackets when there are no args left (consistent formatting)
+                action_sanit = f"Action: {name}[{cleaned}]"
+            else:
+                action_sanit = action
+            sanitized.append({"thought": step.get("thought", ""), "action": action_sanit, "observation": step.get("observation", "")})
+
+        history_block = format_history(sanitized)
+        preamble = SYSTEM_PREAMBLE_NO_FILTERS
+
+    return (
+        f"{preamble}\n\n"
+        f"User Question: {user_query}\n\n"
+        f"{history_block}\n"
+        f"Next step:\n"
+        f"Thought:"
+    )

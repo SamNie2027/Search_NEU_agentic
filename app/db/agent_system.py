@@ -54,7 +54,7 @@ class ReActAgent:
         for step_idx in range(self.config.max_steps):
             # 1. At each step, format the prompt based on the make_prompt function and self.trajectory
             # `make_prompt` expects the trajectory as a list of dicts with keys: thought, action, observation
-            prompt = make_prompt(user_query, [asdict(s) for s in self.trajectory], useFilters)
+            prompt = make_prompt(user_query, [asdict(s) for s in self.trajectory], useFilters=useFilters)
 
             # 2. Use self.llm to process the prompt
             try:
@@ -99,6 +99,18 @@ class ReActAgent:
                 break
 
             # 4. Execute the action
+            # If filters are disabled for this run, defensively remove any
+            # disallowed filter arguments that the LLM may have emitted so
+            # tools cannot receive or act on them.
+            if not useFilters:
+                disallowed_keys = {"bucketLevel", "subject", "subjectCode", "subject_code"}
+                present = disallowed_keys.intersection(args.keys())
+                if present:
+                    for k in present:
+                        args.pop(k, None)
+                    if self.config.verbose:
+                        print(f"[agent_system] Stripped disallowed filter args from action '{name}': {sorted(list(present))}")
+
             try:
                 obs_payload = self.tools[name]["fn"](**args)
                 observation = json.dumps(obs_payload, ensure_ascii=False)  # show structured obs

@@ -108,9 +108,11 @@
     <main class="container mx-auto px-4 py-8 max-w-6xl">
         <!-- Chat Messages Container -->
         <div id="chat-messages"
-            class="mb-6 space-y-4 min-h-[400px] max-h-[600px] overflow-y-auto p-4 bg-gray-900 rounded-lg border border-gray-800 hidden">
+            class="mb-6 space-y-4 min-h-[400px] max-h-[600px] overflow-y-auto p-4 bg-gray-900 rounded-lg border border-gray-800 hidden">            <!-- Incoming changes / messages area -->
+            <div id="incoming-controls" class="mb-4 flex items-center space-x-3">
+            </div>
             <!-- Messages will be added here dynamically -->
-        </div>
+            </div>
 
         <!-- Input Section -->
         <div class="bg-gray-900 rounded-lg border border-gray-800 p-6 shadow-xl">
@@ -126,8 +128,12 @@
                     <option value="agent">Agent Search</option>
                 </select>
             </div>
-
             <!-- Optional Filters -->
+                            <div id="UseFilters" class="flex items-center space-x-3 p-3 bg-black text-white border border-red-600 rounded-lg">
+                                <input id="useFiltersCheckbox" type="checkbox" class="h-5 w-5 text-red-500 bg-gray-800 border-gray-600 rounded focus:ring-red-500">
+                                <label for="useFiltersCheckbox" class="text-sm font-medium">Allow agent to use filters <span class="text-xs text-red-300">(results are inconsistent)</span></label>
+                            </div>
+
             <div id="filters-container" class="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <h3 class="text-white font-semibold text-lg col-span-full mb-2">Optional Filters</h3>
 
@@ -174,6 +180,7 @@
                         <option value="CS">CS Major Requirements</option>
                     </select>
                 </div>
+            </div>
             </div>
 
             <!-- Query Input -->
@@ -238,18 +245,25 @@
         const bucketFilter = document.querySelector('#bucket-filter');
         const creditsFilter = document.querySelector('.credits-filter');
         const majorRequirementFilter = document.querySelector('#major-requirement-filter');
+        const checkbox = document.querySelector('#UseFilters input[type="checkbox"]');
 
         // Hide filters for embedding-based or agent searches
         function updateFiltersVisibility() {
             const filters = document.getElementById('filters-container');
+            const checkboxToggle = document.getElementById('UseFilters');
             if (!filters) return;
             const val = modelInput.value;
-            if (val === 'embeddings' || val === 'agent') {
+            if (val === 'embeddings') {
                 filters.style.display = 'none';
+                checkboxToggle.style.display = 'none';
+            } else if (val === 'agent') {
+                filters.style.display = 'none';
+                checkboxToggle.style.display = 'block';
             } else {
                 filters.style.display = 'grid';
+                checkboxToggle.style.display = 'none';
             }
-        }
+            }
 
         modelInput.addEventListener('change', updateFiltersVisibility);
         // initial state
@@ -276,6 +290,20 @@
                 const bucket = bucketFilter.value;
                 const credits = creditsFilter.value.trim();
                 const majorRequirement = majorRequirementFilter.value.trim();
+                // Determine whether filters are active. Send as '1' or '0' so backend
+                // doesn't interpret the literal string 'false' as truthy.
+                // Determine whether filters toggle is visible to the user. If the
+                // `#UseFilters` control is visible, respect the checkbox state.
+                // If the control itself is hidden, treat filters as disabled.
+                const useFiltersToggle = document.getElementById('UseFilters');
+                let useFilters = '0';
+                if (useFiltersToggle && window.getComputedStyle(useFiltersToggle).display !== 'none') {
+                    useFilters = (checkbox && checkbox.checked) ? '1' : '0';
+                } else {
+                    // Toggle not visible (or missing) -> filters disabled
+                    useFilters = '0';
+                }
+
 
                 // Send request to backend with all parameters
                 const response = await fetch('/api/chat', {
@@ -283,7 +311,7 @@
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                     },
-                    body: `message=${encodeURIComponent(message)}&prefix=${encodeURIComponent(prefix)}&bucket=${encodeURIComponent(bucket)}&credits=${encodeURIComponent(credits)}&major_requirement=${encodeURIComponent(majorRequirement)}&modelType=${encodeURIComponent(modelType)}`
+                    body: `message=${encodeURIComponent(message)}&prefix=${encodeURIComponent(prefix)}&bucket=${encodeURIComponent(bucket)}&credits=${encodeURIComponent(credits)}&major_requirement=${encodeURIComponent(majorRequirement)}&modelType=${encodeURIComponent(modelType)}&useFilters=${encodeURIComponent(useFilters)}`
                 });
 
                 const data = await response.json();
