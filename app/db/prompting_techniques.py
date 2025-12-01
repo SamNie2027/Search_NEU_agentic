@@ -379,7 +379,7 @@ SYSTEM_PREAMBLE_WITH_FILTERS = f"""
 """.strip()
 
 SYSTEM_PREAMBLE_NO_FILTERS = f"""
-    You are a helpful ReAct agent. You may use tools to find relevant courses for the user.
+    You are a helpful ReAct agent. You may use tools to find relevant courses for the user. DO NOT use bucketLevel or subject filters.
 
     Available tools:
     - keyword_search[query="<text>"]
