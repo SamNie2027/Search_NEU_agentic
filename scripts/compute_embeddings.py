@@ -1,20 +1,24 @@
+"""
+Compute and persist course embeddings for semantic search.
+
+Loads course text from database, generates embeddings using sentence-transformers,
+and saves them to parquet format with metadata.
+"""
 import sys
 from pathlib import Path
-
-# Ensure repository root is on sys.path so `import app` works when running this script
-ROOT = Path(__file__).resolve().parents[1]
-if str(ROOT) not in sys.path:
-	sys.path.insert(0, str(ROOT))
-     
-from sentence_transformers import SentenceTransformer
-from app.db.queries import return_text_stream
-from app.db.engine import get_session
-import pandas as pd
 import json
+import pandas as pd
 from datetime import datetime
 
+from sentence_transformers import SentenceTransformer
 
-# obtain sentences from the queries module (assumes return_text_stream is iterable)
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from app.database.queries import return_text_stream
+from app.database.engine import get_session
+
 
 with get_session() as session:
     # Collect recipe strings in chunks. `return_text_stream` yields strings;
@@ -23,7 +27,6 @@ with get_session() as session:
     sentences = []
     for x in range(0, 6001, 1000):
         chunk = list(return_text_stream(session, offset=x, n=1000))
-        # filter out any empty strings
         chunk = [s for s in chunk if s]
         sentences.extend(chunk)
 
@@ -32,11 +35,9 @@ model = SentenceTransformer('sentence-transformers/all-mpnet-base-v2')
 embeddings = model.encode(sentences, batch_size=64, show_progress_bar=True)
 dim = embeddings.shape[1] if hasattr(embeddings, 'shape') and len(embeddings.shape) > 1 else (len(embeddings[0]) if embeddings else 0)
 
-# Persist embeddings and metadata
-out_dir = Path(ROOT) / "data"
+out_dir = Path(ROOT) / "data" / "embeddings"
 out_dir.mkdir(parents=True, exist_ok=True)
 
-# Build DataFrame: text + embedding (as list)
 df = pd.DataFrame({
     "text": sentences,
     "embedding": [emb.tolist() if hasattr(emb, 'tolist') else list(emb) for emb in embeddings],

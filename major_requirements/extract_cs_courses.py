@@ -1,8 +1,6 @@
 ### Extracts CS course requirements from JSON taken from GraduateNU's codebase 
 # for 2025 BS Computer Science majors-- ignores concentrations
 
-# can be extended to handle other majors
-
 import json
 
 cs_major_json_data = {

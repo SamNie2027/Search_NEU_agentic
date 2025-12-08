@@ -1,10 +1,15 @@
-# tests/verify_parquet_embeddings.py
-import json
-import pandas as pd
-from pathlib import Path
-import sys
+"""
+Verify parquet embeddings file structure and metadata.
 
-p = Path("data")
+Checks that embeddings file exists, has correct dimensions, and matches metadata.
+"""
+import json
+import sys
+from pathlib import Path
+
+import pandas as pd
+
+p = Path("data/embeddings")
 pq = p / "course_embeddings.parquet"
 meta_file = p / "embedding_meta.json"
 

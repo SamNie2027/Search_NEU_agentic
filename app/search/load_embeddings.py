@@ -1,15 +1,24 @@
-import pandas as pd
+"""
+Load course embeddings from parquet files.
 
+Provides functions to load pre-computed embeddings and course text data
+for semantic search operations.
+"""
+import pandas as pd
 from pathlib import Path
 import numpy as np
 
+
 def load_embeddings():
-    """Load embeddings parquet file from a sensible location.
+    """
+    Load embeddings from parquet file, searching repository if needed.
+    
+    Returns:
+        Tuple of (courses, embeddings) where courses is a list of course text
+        and embeddings is a list of embedding vectors.
     """
     filename = "course_embeddings.parquet"
     module_dir = Path(__file__).resolve().parent
-
-    # As a last resort, search the repository for the file name and load the first match
     repo_root = module_dir.parent.parent
     matches = list(repo_root.rglob(filename))
     if matches:
@@ -18,7 +27,6 @@ def load_embeddings():
         courses = df["text"].tolist()
         embeddings = df["embedding"].tolist()
 
-        # Load metadata if present (embedding_meta.json) and validate dimension
         meta_path = parquet_path.with_name("embedding_meta.json")
         meta = None
         if meta_path.exists():
@@ -26,7 +34,6 @@ def load_embeddings():
             with open(meta_path, "r", encoding="utf-8") as fh:
                 meta = json.load(fh)
 
-        # Validate embedding dimension (if metadata provides it)
         data_dim = len(embeddings[0]) if embeddings else 0
         if meta and "dim" in meta:
             try:

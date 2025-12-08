@@ -6,13 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agentic Course Registration Assistant</title>
 
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- Flowbite -->
     <link href="https://cdn.jsdelivr.net/npm/flowbite@2.5.2/dist/flowbite.min.css" rel="stylesheet" />
-
-    <!-- Google Fonts - Poppins and Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -24,7 +19,6 @@
             font-family: 'Inter', 'Poppins', sans-serif;
         }
 
-        /* Animated gradient for heading */
         @keyframes gradient-shift {
 
             0%,
@@ -46,7 +40,6 @@
             animation: gradient-shift 3s ease infinite;
         }
 
-        /* Red hover effects */
         .hover-red:hover {
             background-color: #dc2626;
             color: white;
@@ -54,7 +47,6 @@
             transition: all 0.3s ease;
         }
 
-        /* Chat message animations */
         .message-enter {
             animation: slideIn 0.3s ease-out;
         }
@@ -71,7 +63,6 @@
             }
         }
 
-        /* Custom scrollbar */
         ::-webkit-scrollbar {
             width: 8px;
         }
@@ -92,7 +83,6 @@
 </head>
 
 <body class="bg-black text-white min-h-screen">
-    <!-- Header -->
     <header class="bg-black border-b-2 border-red-600 sticky top-0 z-50 shadow-lg">
         <div class="container mx-auto px-4 py-3">
             <h1 class="text-2xl md:text-3xl font-bold text-center gradient-text mb-1">
@@ -104,20 +94,14 @@
         </div>
     </header>
 
-    <!-- Main Content -->
     <main class="container mx-auto px-4 py-8 max-w-6xl">
-        <!-- Chat Messages Container -->
         <div id="chat-messages"
             class="mb-6 space-y-4 min-h-[400px] max-h-[600px] overflow-y-auto p-4 bg-gray-900 rounded-lg border border-gray-800 hidden">
-            <!-- Incoming changes / messages area -->
             <div id="incoming-controls" class="mb-4 flex items-center space-x-3">
             </div>
-            <!-- Messages will be added here dynamically -->
         </div>
 
-        <!-- Input Section -->
         <div class="bg-gray-900 rounded-lg border border-gray-800 p-6 shadow-xl">
-            <!-- Search Style Selection -->
             <div class="mb-6">
                 <label class="block text-white font-semibold mb-2 text-lg">
                     Search Style
@@ -129,7 +113,6 @@
                     <option value="agent">Agent Search</option>
                 </select>
             </div>
-            <!-- Optional Filters -->
             <div id="UseFilters"
                 class="flex items-center space-x-3 p-3 bg-black text-white border border-red-600 rounded-lg">
                 <input id="useFiltersCheckbox" type="checkbox"
@@ -141,7 +124,6 @@
             <div id="filters-container" class="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <h3 class="text-white font-semibold text-lg col-span-full mb-2">Optional Filters</h3>
 
-                <!-- Prefix Filter -->
                 <div>
                     <label class="block text-gray-300 mb-2">Prefix</label>
                     <input type="text"
@@ -149,7 +131,6 @@
                         placeholder="CS, POLS, etc.">
                 </div>
 
-                <!-- Class Level Filter -->
                 <div>
                     <label class="block text-gray-300 mb-2">Class Level</label>
                     <select id="bucket-filter"
@@ -167,7 +148,6 @@
                     </select>
                 </div>
 
-                <!-- Credits Filter -->
                 <div>
                     <label class="block text-gray-300 mb-2">Credits</label>
                     <input type="number"
@@ -175,7 +155,6 @@
                         placeholder="How many credits...">
                 </div>
 
-                <!-- Major Requirement Filter -->
                 <div>
                     <label class="block text-gray-300 mb-2">Major Requirement</label>
                     <select id="major-requirement-filter"
@@ -189,7 +168,6 @@
             </div>
         </div>
 
-        <!-- Query Input -->
         <div class="mb-4">
             <label class="block text-white font-semibold mb-4 mt-4 text-lg">
                 Make your query here
@@ -199,7 +177,6 @@
                 placeholder="What sort of topic do you want to learn..." rows="3"></textarea>
         </div>
 
-        <!-- Send Button -->
         <button
             class="send-button w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-red-600/50">
             Send
@@ -207,18 +184,14 @@
         </div>
     </main>
 
-    <!-- Flowbite JS -->
     <script src="https://cdn.jsdelivr.net/npm/flowbite@2.5.2/dist/flowbite.min.js"></script>
 
     <script>
-        // Get elements
         const chatMessages = document.getElementById('chat-messages');
         const messageInput = document.querySelector('.message-input');
         const sendButton = document.querySelector('.send-button');
 
-        // Function to add a message to the chat
         function addMessage(content, isUser = false) {
-            // Show chat container when first message is added
             if (chatMessages.classList.contains('hidden')) {
                 chatMessages.classList.remove('hidden');
             }
@@ -240,12 +213,9 @@
 
             messageDiv.appendChild(contentDiv);
             chatMessages.appendChild(messageDiv);
-
-            // Scroll to bottom
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
 
-        // Get filter elements
         const modelInput = document.querySelector('#model-type');
         const prefixInput = document.querySelector('.prefix-input');
         const bucketFilter = document.querySelector('#bucket-filter');
@@ -253,7 +223,6 @@
         const majorRequirementFilter = document.querySelector('#major-requirement-filter');
         const checkbox = document.querySelector('#UseFilters input[type="checkbox"]');
 
-        // Hide filters for embedding-based or agent searches
         function updateFiltersVisibility() {
             const filters = document.getElementById('filters-container');
             const checkboxToggle = document.getElementById('UseFilters');
@@ -272,19 +241,14 @@
         }
 
         modelInput.addEventListener('change', updateFiltersVisibility);
-        // initial state
         updateFiltersVisibility();
 
-        // Function to send message
         async function sendMessage() {
             const message = messageInput.value.trim();
 
             if (!message) return;
 
-            // Add user message to chat
             addMessage(message, true);
-
-            // Clear input and disable button
             messageInput.value = '';
             sendButton.disabled = true;
             sendButton.textContent = 'Sending...';
@@ -296,22 +260,13 @@
                 const bucket = bucketFilter.value;
                 const credits = creditsFilter.value.trim();
                 const majorRequirement = majorRequirementFilter.value.trim();
-                // Determine whether filters are active. Send as '1' or '0' so backend
-                // doesn't interpret the literal string 'false' as truthy.
-                // Determine whether filters toggle is visible to the user. If the
-                // `#UseFilters` control is visible, respect the checkbox state.
-                // If the control itself is hidden, treat filters as disabled.
+
                 const useFiltersToggle = document.getElementById('UseFilters');
                 let useFilters = '0';
                 if (useFiltersToggle && window.getComputedStyle(useFiltersToggle).display !== 'none') {
                     useFilters = (checkbox && checkbox.checked) ? '1' : '0';
-                } else {
-                    // Toggle not visible (or missing) -> filters disabled
-                    useFilters = '0';
                 }
 
-
-                // Send request to backend with all parameters
                 const response = await fetch('/api/chat', {
                     method: 'POST',
                     headers: {
@@ -321,15 +276,12 @@
                 });
 
                 const data = await response.json();
-
-                // Add bot response to chat
                 addMessage(data.response, false);
 
             } catch (error) {
                 console.error('Error:', error);
                 addMessage('<p class="text-red-400">Sorry, there was an error processing your request.</p>', false);
             } finally {
-                // Re-enable button
                 sendButton.disabled = false;
                 sendButton.textContent = 'Send';
                 sendButton.classList.remove('opacity-75', 'cursor-not-allowed');
@@ -337,7 +289,6 @@
             }
         }
 
-        // Event listeners
         sendButton.addEventListener('click', sendMessage);
 
         messageInput.addEventListener('keypress', (e) => {
@@ -347,7 +298,6 @@
             }
         });
 
-        // Focus input on load
         messageInput.focus();
     </script>
 </body>

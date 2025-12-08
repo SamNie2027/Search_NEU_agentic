@@ -1,13 +1,9 @@
-# Step 2: Designing Prompting Techniques
-# We will build ReAct prompting, which extends that idea by mixing the model's written thoughts with actions.
+"""
+ReAct Prompting Techniques.
 
-# Recall that the agent model follows a loop (Thought → Action → Observation) where it first using chain-of-thought prompting about what to do, then takes an action, reads the result, and repeats until it is ready to answer.
-# We will define a prompting format that explicitly concatnate Thought, Action, Observation into a prompt:
-
-# We define:
-#   1) A method for parsing Action lines
-#   2) A small argument parser for the tools defined in the last step, such as parsing key="value", key=123, key=4.5, key=true/false
-#   3) Helpers to format the agent’s history and build the next prompt
+Provides functions for parsing agent actions, formatting agent history,
+and constructing prompts for the ReAct (Reasoning and Acting) agent framework.
+"""
 import json
 from typing import Any, Dict, List, Optional, Tuple
 import ast
@@ -27,7 +23,6 @@ import csv, io
 #     We will implement to interleave the language model with external tools (e.g., the search method)
 
 
-# ======= Helper functions =======
 def convert_value(raw: str) -> Any:
     """
     Convert a raw string token into a Python type:
@@ -66,16 +61,8 @@ def split_args(argstr: str) -> Dict[str, Any]:
             # bare flag -> True
             args[field] = True
     return args
-# ====== Helper functions ======
 
-# We will write a parser that converts a string of actions to arguments
-#       For example, a languge model would ouptut actions in the following form:
-#       'Action: search[query="starry night", k=3]'
-#       'Action: finish[answer="Vincent van Gogh, at Saint-Rémy-de-Provence."]'
-#
-#       We will need a function to parse them into a function call to external tools
-#
-#       Let's implement the key function for this task
+
 def parse_action(line: str) -> Optional[Tuple[str, Dict[str, Any]]]:
     """
     Parse lines like:
@@ -118,8 +105,6 @@ def parse_action(line: str) -> Optional[Tuple[str, Dict[str, Any]]]:
     return name, args
 
 
-
-# 2. We write a function that turn past steps into a readable history block for the prompt
 def format_history(trajectory: List[Dict[str, str]]) -> str:
     """
     Each step in trajectory should have keys: 'thought', 'action', 'observation'.
@@ -335,12 +320,12 @@ bucket_levels = {
 SYSTEM_PREAMBLE_WITH_FILTERS = f"""
     You are a helpful ReAct agent. You may use tools to find relevant courses for the user.
 
-    Note: The College of Professioanl Studies, aka CPS program is separate from Undergraduate/ Graduate courses so avoid recommending unless the query or context includes CPS.
+    Note: The College of Professional Studies, aka CPS program is separate from Undergraduate/Graduate courses so avoid recommending unless the query or context includes CPS.
     
     Available subject codes (subject parameter for keyword_search) can ONLY assign subject to these:
     {json.dumps(subject_codes, indent=2)}
 
-    Available bucket levels (Most relevent will be 2000, 3000, or 4000. Please add more weight to those):
+    Available bucket levels (Most relevant will be 2000, 3000, or 4000. Please add more weight to those):
     {json.dumps(bucket_levels, indent=2)}
 
     When the user requests information related to a subject, choose the most appropriate subject code.

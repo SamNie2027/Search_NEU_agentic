@@ -1,34 +1,29 @@
-from typing import Union
+"""
+FastAPI application for course search.
 
+Provides web interface and API endpoints for searching courses using
+TF-IDF, embeddings, and ReAct agent-based search.
+"""
 from pathlib import Path
 import sys
-import os
+import json
+import types
 
 from fastapi import FastAPI, Request, Form
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.templating import Jinja2Templates
 
-# Ensure repository root is on sys.path so top-level packages (e.g. `scripts`)
-# are importable when this module is loaded with the working directory set to
-# the `app/` folder (fastapi dev may insert `app/` into sys.path).
 repo_root = Path(__file__).resolve().parents[1]
 if str(repo_root) not in sys.path:
     sys.path.insert(0, str(repo_root))
 
-from app.db import queries as queries
-from app.db import tfidf_search as tfidf
-from app.db import run_agent
-from app.db.load_embeddings import load_embeddings
-from app.db.embedding_search import embedding_search
-import numpy as np 
-from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.templating import Jinja2Templates
-
-import json
-import types 
-
+from app.database import queries
+from app.search import tfidf_search as tfidf
+from app.agent import run_agent
+from app.search.load_embeddings import load_embeddings
+from app.search.embedding_search import embedding_search
 
 app = FastAPI()
-
-# Templates directory is at project root, not in app/
 templates = Jinja2Templates(directory=str(repo_root / "templates"))
 
 @app.get("/", response_class=HTMLResponse)
@@ -49,57 +44,49 @@ async def chat(
     useFilters: str = Form("0"),
 ):
     """
-    Note: older UI used `isChecked` with literal 'true'/'false'. Newer frontend sends
-    `useFilters` as '1' or '0'. Accept both for backward compatibility.
+    Handle course search requests from the frontend.
+    
+    Supports TF-IDF, embeddings, and agent-based search with optional filters.
+    Accepts both legacy `isChecked` and newer `useFilters` parameters for backward compatibility.
     """
     keyword = message.lower().strip()
-    # Prefer the explicit numeric `useFilters` ('1' => enabled). Fall back to
-    # legacy `isChecked` values sent by older clients. Accept a range of
-    # truthy string values (case-insensitive) to be more robust against
-    # frontend differences.
+    
     def _to_bool(val: str) -> bool:
+        """Convert string to boolean, accepting various truthy values."""
         if val is None:
             return False
         v = str(val).strip().lower()
         return v in ("1", "true", "t", "yes", "y", "on")
 
     use_filters = _to_bool(useFilters) or _to_bool(isChecked)
-
-    # Debug print: show raw incoming values and the computed boolean
-    print(f"useFilters raw: '{useFilters}'  isChecked raw: '{isChecked}'  -> use_filters: {use_filters}")
     
-    # Convert credits to int (handle empty string)
     try:
         credits_int = int(credits) if credits else None
     except ValueError:
         credits_int = None
     
-    # Convert bucket to int or None
     try:
         bucket_int = int(bucket) if bucket != "None" else None
     except ValueError:
         bucket_int = None
     
-    # Build kwargs only with non-None/non-empty values
     search_kwargs = {"query": keyword}
     
     if bucket_int is not None:
         search_kwargs["bucketLevel"] = bucket_int
     
-    if prefix:  # Only add if not empty string
+    if prefix:
         search_kwargs["subject"] = prefix
     
     if credits_int is not None:
         search_kwargs["credits"] = credits_int
     
-    if major_requirement:  # Only add if not empty string
+    if major_requirement:
         search_kwargs["major_requirement"] = major_requirement.strip()
     
-    # Search for courses with filters
     try:
         if modelType == "tfidf":
             result = tfidf.tool_search(**search_kwargs)
-                # Extract the results list from the dictionary
             if result and isinstance(result, dict) and 'results' in result:
                 classes = result['results']
             elif result:
@@ -134,8 +121,6 @@ async def chat(
     
     print(result) 
 
-     
-    # Render template
     if classes:
         html_content = templates.get_template("ClassListTemplate.html").render({"classes": classes})
     else:
@@ -144,27 +129,38 @@ async def chat(
     return {"response": html_content}
 
 @app.get("/healthz")
-def read_root():
-    return {"status:ok", "db:"+str(len(queries.random_courses_safe())!=0)}
+def health_check():
+    """Health check endpoint."""
+    db_available = len(queries.random_courses_safe()) != 0
+    return {"status": "ok", "db": str(db_available)}
+
 
 @app.get("/courses/sample")
-def read_root():
-    result=queries.random_courses_safe()
-    return {json.dumps(result, default=my_object_encoder)}
+def sample_courses():
+    """Get a sample of random courses."""
+    result = queries.random_courses_safe()
+    return JSONResponse(content=json.loads(json.dumps(result, default=my_object_encoder)))
+
 
 @app.get("/courses/search/{name}")
-def read_item(name: str, q: int= 10):
-    result=queries.search_courses_by_title_safe(name, q)
-    return {json.dumps(result, default=my_object_encoder)}
+def search_courses_by_name(name: str, q: int = 10):
+    """Search courses by title."""
+    result = queries.search_courses_by_title_safe(name, q)
+    serialized = json.dumps(result, default=my_object_encoder)
+    return JSONResponse(content=json.loads(serialized))
+
 
 @app.get("/courses/search/{subject}/{id}")
-def read_item(subject: str,id: int):
-    result=queries.get_course_by_code_safe(subject,id)
-    return {json.dumps(result, default=my_object_encoder)}
+def get_course(subject: str, id: int):
+    """Get a specific course by subject and number."""
+    result = queries.get_course_by_code_safe(subject, id)
+    serialized = json.dumps(result, default=my_object_encoder)
+    return JSONResponse(content=json.loads(serialized))
 
 
 def my_object_encoder(obj):
+    """JSON encoder for SimpleNamespace objects."""
     if isinstance(obj, types.SimpleNamespace):
-        return {"subject": obj.subject, "number": obj.number, "title":obj.title, "snippet":obj.text}
+        return {"subject": obj.subject, "number": obj.number, "title": obj.title, "snippet": obj.text}
     raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
     

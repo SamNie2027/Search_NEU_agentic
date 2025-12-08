@@ -1,5 +1,9 @@
-# Note: This file is very subject to change based on the actual schema of the DB and what shape of data we care to implement
-# Therefore there is some dependency on issue #13 
+"""
+Database models for course data.
+
+Provides SQLAlchemy ORM models and utilities for working with course data,
+including declarative models and runtime schema reflection.
+"""
 from __future__ import annotations
 
 from typing import Optional, Type, List
@@ -9,8 +13,6 @@ from sqlalchemy.orm import Mapped, declarative_base, mapped_column
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.dialects.postgresql import ARRAY
 
-# Declarative base for ORM models
-# AKA a base for the table
 Base = declarative_base()
 
 
@@ -29,7 +31,7 @@ class Course(Base):
 		Index("ix_courses_subject_number", "subject", "number"),
 	)
 
-	# Matches raw_data/seed.py (Postgres) shape
+	# Matches data/raw_sp26_course_data/seed.py (Postgres) shape
 	id: Mapped[Optional[int]] = mapped_column(Integer, primary_key=True)
 	# Department code (TEXT)
 	subject: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
@@ -59,7 +61,7 @@ def resolve_course_model(engine) -> Type[Course]:
 	- If the schema is unknown/mismatched, returns an automapped class via reflection.
 
 	Usage:
-		from app.db.models import resolve_course_model
+		from app.database.models import resolve_course_model
 		CourseModel = resolve_course_model(engine)
 		session.query(CourseModel).limit(1).all()
 	"""
@@ -68,6 +70,7 @@ def resolve_course_model(engine) -> Type[Course]:
 
 	# If the table exists and required columns are present, use the declarative Course
 	required = {"subject", "number", "title", "description"}
+	
 	try:
 		if inspector.has_table("courses"):
 			try:

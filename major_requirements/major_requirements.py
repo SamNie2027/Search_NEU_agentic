@@ -12,16 +12,12 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Tuple, Optional
 
-# Default path for CS major requirements JSON
+# Default path for CS major requirements JSON (in same directory)
 DEFAULT_REQUIREMENTS_PATH = Path(__file__).parent / "major_requirements.json"
 
 # Try to import major data from extract_cs_courses.py
 try:
-    # Add parent directory to path to import extract_cs_courses
-    repo_root = Path(__file__).resolve().parent
-    if str(repo_root) not in sys.path:
-        sys.path.insert(0, str(repo_root))
-    from extract_cs_courses import cs_major_json_data, cyber_major_json_data, data_science_major_json_data
+    from .extract_cs_courses import cs_major_json_data, cyber_major_json_data, data_science_major_json_data
     MAJOR_DATA_AVAILABLE = True
 except ImportError:
     MAJOR_DATA_AVAILABLE = False
