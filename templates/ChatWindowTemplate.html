@@ -108,11 +108,12 @@
     <main class="container mx-auto px-4 py-8 max-w-6xl">
         <!-- Chat Messages Container -->
         <div id="chat-messages"
-            class="mb-6 space-y-4 min-h-[400px] max-h-[600px] overflow-y-auto p-4 bg-gray-900 rounded-lg border border-gray-800 hidden">            <!-- Incoming changes / messages area -->
+            class="mb-6 space-y-4 min-h-[400px] max-h-[600px] overflow-y-auto p-4 bg-gray-900 rounded-lg border border-gray-800 hidden">
+            <!-- Incoming changes / messages area -->
             <div id="incoming-controls" class="mb-4 flex items-center space-x-3">
             </div>
             <!-- Messages will be added here dynamically -->
-            </div>
+        </div>
 
         <!-- Input Section -->
         <div class="bg-gray-900 rounded-lg border border-gray-800 p-6 shadow-xl">
@@ -129,10 +130,13 @@
                 </select>
             </div>
             <!-- Optional Filters -->
-                            <div id="UseFilters" class="flex items-center space-x-3 p-3 bg-black text-white border border-red-600 rounded-lg">
-                                <input id="useFiltersCheckbox" type="checkbox" class="h-5 w-5 text-red-500 bg-gray-800 border-gray-600 rounded focus:ring-red-500">
-                                <label for="useFiltersCheckbox" class="text-sm font-medium">Allow agent to use filters <span class="text-xs text-red-300">(results are inconsistent)</span></label>
-                            </div>
+            <div id="UseFilters"
+                class="flex items-center space-x-3 p-3 bg-black text-white border border-red-600 rounded-lg">
+                <input id="useFiltersCheckbox" type="checkbox"
+                    class="h-5 w-5 text-red-500 bg-gray-800 border-gray-600 rounded focus:ring-red-500">
+                <label for="useFiltersCheckbox" class="text-sm font-medium">Allow agent to use filters <span
+                        class="text-xs text-red-300">(results are inconsistent)</span></label>
+            </div>
 
             <div id="filters-container" class="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <h3 class="text-white font-semibold text-lg col-span-full mb-2">Optional Filters</h3>
@@ -177,27 +181,29 @@
                     <select id="major-requirement-filter"
                         class="bg-black text-white border border-red-600 rounded-lg px-4 py-2.5 w-full focus:ring-2 focus:ring-red-600 focus:border-red-600 hover:border-red-500 cursor-pointer">
                         <option value="">All Courses</option>
-                        <option value="CS">CS Major Requirements</option>
+                        <option value="CS">Computer Science Major Requirements</option>
+                        <option value="Cyber">Cybersecurity Major Requirements</option>
+                        <option value="Data Science">Data Science Major Requirements</option>
                     </select>
                 </div>
             </div>
-            </div>
+        </div>
 
-            <!-- Query Input -->
-            <div class="mb-4">
-                <label class="block text-white font-semibold mb-2 text-lg">
-                    Make your query here
-                </label>
-                <textarea
-                    class="message-input bg-black text-white border border-red-600 rounded-lg px-4 py-3 w-full focus:ring-2 focus:ring-red-600 focus:border-red-600 hover:border-red-500 resize-none"
-                    placeholder="What sort of topic do you want to learn..." rows="3"></textarea>
-            </div>
+        <!-- Query Input -->
+        <div class="mb-4">
+            <label class="block text-white font-semibold mb-4 mt-4 text-lg">
+                Make your query here
+            </label>
+            <textarea
+                class="message-input bg-black text-white border border-red-600 rounded-lg px-4 py-3 w-full focus:ring-2 focus:ring-red-600 focus:border-red-600 hover:border-red-500 resize-none"
+                placeholder="What sort of topic do you want to learn..." rows="3"></textarea>
+        </div>
 
-            <!-- Send Button -->
-            <button
-                class="send-button w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-red-600/50">
-                Send
-            </button>
+        <!-- Send Button -->
+        <button
+            class="send-button w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-red-600/50">
+            Send
+        </button>
         </div>
     </main>
 
@@ -263,7 +269,7 @@
                 filters.style.display = 'grid';
                 checkboxToggle.style.display = 'none';
             }
-            }
+        }
 
         modelInput.addEventListener('change', updateFiltersVisibility);
         // initial state

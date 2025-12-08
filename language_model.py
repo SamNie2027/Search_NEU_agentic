@@ -11,15 +11,33 @@ tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, trust_remote_code=True)
 # ====== Model load ======
 # Load the model from Hugging Face with reasonable defaults for device and dtype.
 # Use 8-bit loading if requested, and map device automatically when CUDA is available.
-device_map = "auto" if torch.cuda.is_available() else {"": "cpu"}
-model = AutoModelForCausalLM.from_pretrained(
-    MODEL_NAME,
-    load_in_8bit=LOAD_8BIT,
-        dtype=DTYPE,
-    trust_remote_code=True,
-    device_map=device_map,
-    low_cpu_mem_usage=True,
-)
+# Only use device_map="auto" if accelerate is available, otherwise use manual device mapping
+try:
+    import accelerate
+    has_accelerate = True
+except ImportError:
+    has_accelerate = False
+
+if torch.cuda.is_available() and has_accelerate:
+    device_map = "auto"
+else:
+    device_map = None  # Will use default device placement
+
+model_kwargs = {
+    "load_in_8bit": LOAD_8BIT,
+    "dtype": DTYPE,
+    "trust_remote_code": True,
+    "low_cpu_mem_usage": True,
+}
+if device_map is not None:
+    model_kwargs["device_map"] = device_map
+
+model = AutoModelForCausalLM.from_pretrained(MODEL_NAME, **model_kwargs)
+
+# If device_map wasn't used, manually move model to appropriate device
+if device_map is None:
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    model = model.to(device)
 
 # Generation configuration: tune defaults for concise, deterministic ReAct-style replies
 gen_cfg = GenerationConfig(

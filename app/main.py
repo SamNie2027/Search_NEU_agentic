@@ -5,10 +5,6 @@ import sys
 import os
 
 from fastapi import FastAPI, Request, Form
-from db import queries as queries
-from db import tfidf_search as tfidf
-from db import run_agent
-import numpy as np
 
 # Ensure repository root is on sys.path so top-level packages (e.g. `scripts`)
 # are importable when this module is loaded with the working directory set to
@@ -17,8 +13,12 @@ repo_root = Path(__file__).resolve().parents[1]
 if str(repo_root) not in sys.path:
     sys.path.insert(0, str(repo_root))
 
+from app.db import queries as queries
+from app.db import tfidf_search as tfidf
+from app.db import run_agent
 from app.db.load_embeddings import load_embeddings
-from app.db.embedding_search import embedding_search 
+from app.db.embedding_search import embedding_search
+import numpy as np 
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
