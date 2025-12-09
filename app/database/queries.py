@@ -1,3 +1,9 @@
+"""
+Database query functions for course data.
+
+Provides functions to query courses by various criteria and format course data
+for use in search and display.
+"""
 from __future__ import annotations
 
 from typing import List, Optional, Tuple
@@ -24,7 +30,6 @@ def _detach_row(obj):
 		values = {c.name: getattr(obj, c.name) for c in table.columns}
 		return SimpleNamespace(**values)
 	except Exception:
-		# Fallback: try vars()
 		try:
 			return SimpleNamespace(**vars(obj))
 		except Exception:
@@ -33,7 +38,6 @@ def _detach_row(obj):
 
 def _course_model_from_session(session: Session):
 	"""Return the appropriate Course model (declarative or reflected) for this session."""
-	# Prefer the declarative model if it maps cleanly; otherwise reflect
 	bind = session.get_bind() if hasattr(session, "get_bind") else session.bind
 	if bind is None:
 		# Fall back to declarative Course if no bind; caller likely misconfigured session
@@ -70,7 +74,6 @@ def search_courses_by_title(
 def random_courses(session: Session, n: int = 3) -> List[Course]:
 	"""Return N random courses. Uses PostgreSQL random() for ordering."""
 	Model = _course_model_from_session(session)
-	# Prefer func.random() (portable on Postgres) rather than text('RANDOM()') literal.
 	q = session.query(Model).order_by(func.random()).limit(int(n))  # type: ignore[arg-type]
 	return list(q)
 
@@ -114,9 +117,8 @@ def get_courses_by_codes(session: Session, course_codes: List[Tuple[str, int]]) 
 
 
 def return_text_stream(session: Session, bucketLevel: int = None, subject: str = None, credits: int = None, n: int = 1000, offset: int = 0):
+	"""Yield formatted course text recipes with optional filters."""
 	Model = _course_model_from_session(session)
-	# Start a base query and apply filters incrementally so we don't need
-	# separate branches for every combination of filters.
 	q = session.query(Model)
 
 	if bucketLevel is not None:
@@ -131,7 +133,6 @@ def return_text_stream(session: Session, bucketLevel: int = None, subject: str =
 		# Assume `credits` is a numeric column on the model
 		q = q.filter(Model.min_credits >= int(credits))
 
-	# Apply a stable ordering and pagination for chunked reads
 	q = q.order_by(Model.subject.asc(), Model.number.asc()).offset(int(offset)).limit(int(n)).yield_per(100)
 
 	for row in q:
@@ -146,8 +147,6 @@ __all__ = [
 	"return_text_stream"
 ]
 
-
-# Convenience wrappers that manage the Session lifecycle using get_session()
 
 def get_course_by_code_safe(subject: str, number: int):
 	"""
@@ -191,7 +190,6 @@ def get_courses_by_codes_safe(course_codes: List[Tuple[str, int]]):
 		rows = get_courses_by_codes(session, course_codes)
 		return [(_detach_row(r) if r is not None else None) for r in rows]
 
-# all declares the module's public API for star-imports.
 __all__ += [
 	"get_course_by_code_safe",
 	"search_courses_by_title_safe",
@@ -208,7 +206,7 @@ def format_course_recipe(course) -> str:
 	"""
 	if course is None:
 		return ""
-	# Try attribute access safely
+	
 	subj = getattr(course, "subject", None)
 	num = getattr(course, "number", None)
 	title = getattr(course, "title", None)
@@ -233,9 +231,7 @@ def format_course_recipe(course) -> str:
 		else:
 			body = str(desc).strip()
 
-	# Compose final recipe and normalize whitespace
 	recipe = f"{head} {body}".strip()
-	# Collapse multiple spaces
 	return " ".join(recipe.split())
 
 

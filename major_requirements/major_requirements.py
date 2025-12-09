@@ -8,11 +8,22 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from pathlib import Path
 from typing import Any, Dict, List, Tuple, Optional
 
-# Default path for CS major requirements JSON
+# Default path for CS major requirements JSON (in same directory)
 DEFAULT_REQUIREMENTS_PATH = Path(__file__).parent / "major_requirements.json"
+
+# Try to import major data from extract_cs_courses.py
+try:
+    from .extract_cs_courses import cs_major_json_data, cyber_major_json_data, data_science_major_json_data
+    MAJOR_DATA_AVAILABLE = True
+except ImportError:
+    MAJOR_DATA_AVAILABLE = False
+    cs_major_json_data = None
+    cyber_major_json_data = None
+    data_science_major_json_data = None
 
 
 def load_requirements(json_path: str | Path | None = None) -> Dict[str, List[Dict[str, Any]]]:
@@ -50,6 +61,7 @@ def parse_course_code(course_entry: Dict[str, Any] | str) -> Optional[Tuple[str,
     
     Handles formats like:
     - {"subject": "CS", "number": 2500}
+    - {"subject": "CS", "classId": 2500}  # Used in extract_cs_courses.py format
     - "CS 2500"
     - {"subject": "CS", "courseNumber": 2500}
     
@@ -73,8 +85,12 @@ def parse_course_code(course_entry: Dict[str, Any] | str) -> Optional[Tuple[str,
     
     if isinstance(course_entry, dict):
         # Handle {"subject": "CS", "number": 2500} or {"subject": "CS", "courseNumber": 2500}
+        # Also handle {"subject": "CS", "classId": 2500} format from extract_cs_courses.py
         subject = course_entry.get("subject") or course_entry.get("Subject")
-        number = course_entry.get("number") or course_entry.get("courseNumber") or course_entry.get("Number")
+        number = (course_entry.get("number") or 
+                 course_entry.get("courseNumber") or 
+                 course_entry.get("Number") or
+                 course_entry.get("classId"))  # Support classId format
         
         if subject and number is not None:
             try:
@@ -105,17 +121,20 @@ def extract_all_course_codes(requirements_data: Dict[str, Any]) -> List[Tuple[st
     def traverse(obj: Any) -> None:
         """Recursively traverse the JSON structure."""
         if isinstance(obj, dict):
+            # Check if this dict represents a course (has subject and classId/number)
             parsed = parse_course_code(obj)
             if parsed:
                 course_codes.add(parsed)
             
-            # Skip concentration/optional keys
+            # Skip concentration/optional keys and metadata
             skip_keys = {"concentration", "concentrations", "optional", "optionals", 
-                        "choose", "select", "elective", "electives"}
+                        "choose", "select", "elective", "electives", "metadata",
+                        "name", "totalCreditsRequired", "yearVersion", "minOptions",
+                        "concentrationOptions", "minRequirementCount"}
             
             for key, value in obj.items():
                 key_lower = str(key).lower()
-                # Skip concentration sections
+                # Skip concentration sections and metadata
                 if any(skip in key_lower for skip in skip_keys):
                     continue
                 traverse(value)
@@ -132,20 +151,66 @@ def extract_all_course_codes(requirements_data: Dict[str, Any]) -> List[Tuple[st
     return sorted(list(course_codes))
 
 
+def _get_major_data_from_python(major: str) -> Dict[str, Any] | None:
+    """
+    Get major data from Python dictionaries in extract_cs_courses.py.
+    
+    Args:
+        major: Major name (e.g., "CS", "Cyber", "Data Science")
+        
+    Returns:
+        Major data dictionary or None if not found
+    """
+    if not MAJOR_DATA_AVAILABLE:
+        return None
+    
+    major_upper = major.upper().strip()
+    major_lower = major.lower().strip()
+    
+    # Map major names to their data
+    major_mapping = {
+        "CS": cs_major_json_data,
+        "COMPUTER SCIENCE": cs_major_json_data,
+        "CYBER": cyber_major_json_data,
+        "CYBERSECURITY": cyber_major_json_data,
+        "CY": cyber_major_json_data,
+        "DATA SCIENCE": data_science_major_json_data,
+        "DS": data_science_major_json_data,
+    }
+    
+    # Try exact match first
+    if major_upper in major_mapping:
+        return major_mapping[major_upper]
+    
+    # Try case-insensitive match
+    for key, value in major_mapping.items():
+        if key.upper() == major_upper or key.lower() == major_lower:
+            return value
+    
+    return None
+
+
 def get_requirement_codes(major: str, requirements: Dict[str, Any] | None = None, 
                          json_path: str | Path | None = None) -> List[Tuple[str, int]]:
     """
     Get course codes for a specific major from requirements data.
     
     Args:
-        major: Major name (e.g., "CS")
-        requirements: Pre-loaded requirements dict. If None, loads from json_path.
+        major: Major name (e.g., "CS", "Cyber", "Data Science")
+        requirements: Pre-loaded requirements dict. If None, loads from json_path or Python data.
         json_path: Path to requirements JSON. Only used if requirements is None.
         
     Returns:
         List of (subject, number) tuples for courses that fulfill any requirement
         for the specified major.
     """
+    # First, try to get data from Python dictionaries
+    major_data = _get_major_data_from_python(major)
+    if major_data is not None:
+        # Extract all course codes from the nested structure
+        return extract_all_course_codes(major_data)
+    
+    # Fall back to JSON file loading
     if requirements is None:
         requirements = load_requirements(json_path)
     

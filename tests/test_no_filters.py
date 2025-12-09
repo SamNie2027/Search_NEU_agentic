@@ -1,7 +1,8 @@
-from app.db.agent_system import ReActAgent, AgentConfig
+from app.agent.agent_system import ReActAgent, AgentConfig
 
 
 def test_strip_filters_from_action():
+    """Test that filters are stripped from tool calls when useFilters=False."""
     calls = {}
 
     def fake_llm(prompt: str) -> str:

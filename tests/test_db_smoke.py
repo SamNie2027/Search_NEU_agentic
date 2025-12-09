@@ -1,7 +1,7 @@
 import pytest
 
-from app.db.engine import engine
-from app.db.queries import (
+from app.database.engine import engine
+from app.database.queries import (
     search_courses_by_title_safe,
     get_course_by_code_safe,
     random_courses_safe,
@@ -11,7 +11,6 @@ from app.db.queries import (
 @pytest.fixture(scope="module")
 def db_available():
     """Skip tests if the DATABASE_URL is not configured or the DB is unreachable."""
-    # engine.url may be None if DATABASE_URL was not set; guard for that
     url = getattr(engine, "url", None)
     if url is None:
         pytest.skip("DATABASE_URL not configured; skipping DB integration tests")
