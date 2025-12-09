@@ -8,7 +8,11 @@ from dataclasses import dataclass, asdict
 from typing import Callable, Dict, List, Tuple, Optional, Any
 import json
 import re
+import logging
+import traceback
+import inspect
 from .prompting_techniques import make_prompt, parse_action
+
 
 @dataclass
 class Step:
@@ -48,6 +52,7 @@ class ReActAgent:
         """
         self.trajectory.clear()
         self._recent_action_counts.clear()
+        print("Starting ReActAgent.run (useFilters=%s, max_steps=%s)", useFilters, self.config.max_steps)
         for step_idx in range(self.config.max_steps):
             # Format prompt with current trajectory
             prompt = make_prompt(user_query, [asdict(s) for s in self.trajectory], useFilters=useFilters)
@@ -57,11 +62,12 @@ class ReActAgent:
                 out = self.llm(prompt)
             except Exception as e:
                 out = f"Thought: (llm error)\nAction: finish[answer=\"LLM error: {e}\"]"
+                print("LLM call raised an exception: %s", e)
 
             # Log intermediate output if verbose
             if self.config.verbose:
-                print(f"\n--- Intermediate output (step {step_idx+1}) ---")
-                print(out)
+                print("--- Intermediate output (step %s) ---", step_idx + 1)
+                print("LLM output:\n%s", out)
 
             # Parse Thought and Action from LLM output
             t_match = re.search(r"Thought:\s*(.*)", out)
@@ -79,9 +85,13 @@ class ReActAgent:
 
             if not parsed:
                 observation = "Invalid action format. Stopping."
+                print("Failed to parse action. action_line=%s LLM_output=%s", action_line, out)
                 self.trajectory.append(Step(thought, action_line, observation, out))
                 break
             name, args = parsed
+
+            print("Parsed action: %s", name)
+            print("Action args: %s", args)
 
             if name == "finish":
                 observation = "done"
@@ -102,13 +112,42 @@ class ReActAgent:
                     for k in present:
                         args.pop(k, None)
                     if self.config.verbose:
-                        print(f"[agent_system] Stripped disallowed filter args from action '{name}': {sorted(list(present))}")
+                        print("[agent_system] Stripped disallowed filter args from action '%s': %s", name, sorted(list(present)))
 
             try:
-                obs_payload = self.tools[name]["fn"](**args)
+                print("Executing tool '%s' with args=%s", name, args)
+                # Introspect the tool function signature and remove any args
+                # that the function does not accept. This prevents TypeError
+                # when the LLM emits unexpected parameters.
+                func = self.tools[name]["fn"]
+                try:
+                    sig = inspect.signature(func)
+                except Exception:
+                    sig = None
+
+                if sig is not None:
+                    accepts_var_kw = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values())
+                    if not accepts_var_kw:
+                        allowed = set(sig.parameters.keys())
+                        filtered_args = {k: v for k, v in args.items() if k in allowed}
+                        removed = set(args.keys()) - set(filtered_args.keys())
+                        if removed:
+                            print("Removed unsupported args for tool '%s': %s", name, sorted(list(removed)))
+                    else:
+                        filtered_args = args
+                else:
+                    filtered_args = args
+
+                obs_payload = func(**filtered_args)
                 observation = json.dumps(obs_payload, ensure_ascii=False)  # show structured obs
+                # Log summary of payload
+                if isinstance(obs_payload, dict):
+                    print("Tool '%s' returned keys=%s", name, list(obs_payload.keys()))
+                else:
+                    print("Tool '%s' returned non-dict payload of type %s", name, type(obs_payload))
             except Exception as e:
                 observation = f"Tool error: {e}"
+                print("Tool '%s' raised an exception while executing with args=%s\n%s", name, args, traceback.format_exc())
 
             self.trajectory.append(Step(thought, action_line, observation, out))
 
@@ -119,9 +158,9 @@ class ReActAgent:
             # UNCOMMENT FOR LOGGING
             # If verbose, print the parsed thought/action and resulting observation now
             if self.config.verbose:
-                print(f"Thought: {thought}")
-                print(f"Action: {action_line}")
-                print(f"Observation: {observation}\n")
+                print("Thought: %s", thought)
+                print("Action: %s", action_line)
+                print("Observation: %s", observation)
         
         # Extract and return the first search results found in trajectory
         results = None
@@ -134,5 +173,6 @@ class ReActAgent:
                 results = obj["results"]
                 break
 
+        print("Agent run completed. Found results=%s", bool(results))
         return results
     
